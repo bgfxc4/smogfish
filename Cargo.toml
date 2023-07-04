@@ -1,0 +1,14 @@
+[package]
+name = "smogfish"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "smogfish"
+path = "src/lib/main.rs"
+
+[[bin]]
+name = "tui"
+path = "src/tui/main.rs"
+
+[dependencies]
