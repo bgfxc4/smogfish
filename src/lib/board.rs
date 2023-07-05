@@ -1,9 +1,43 @@
 pub mod helper;
 pub mod bitboard;
+pub mod pawn;
+pub mod sliding_pieces;
+pub mod knight;
+pub mod king;
 use helper::{Sides, Pieces};
 use bitboard::BitBoard;
 
-#[derive(Default)]
+use std::cmp::PartialEq;
+
+pub struct Position {
+    pub col: u8,
+    pub row: u8,
+}
+
+impl Position {
+    pub fn new(col: u8, row: u8) -> Self {
+        Position{col, row}
+    }
+}
+
+impl PartialEq for Position {
+    fn eq(&self, other: &Self) -> bool {
+        self.row == other.row && self.col == other.col
+    }
+}
+
+pub struct Move {
+    pub from: Position,
+    pub to: Position,
+}
+
+impl Move {
+    pub fn new(from: Position, to: Position) -> Self {
+        Move{from, to}
+    }
+}
+
+
 pub struct Board {
     pieces: [[BitBoard; 6]; 2],
     white_total: BitBoard,
@@ -23,15 +57,15 @@ impl Board {
         return b;
     }
 
-    fn set(&mut self, col: u8, row: u8, piece: u8, color: u8) {
-        self.pieces[color as usize][piece as usize] |= BitBoard(1 << col+row*8);
+    fn set(&mut self, pos: &Position, piece: u8, color: u8) {
+        self.pieces[color as usize][piece as usize] |= BitBoard(1 << pos.col+pos.row*8);
     }
 
-    pub fn get(&self, col: u8, row: u8) -> (u8, u8) { // dont use in engine, only for showing
+    pub fn get(&self, pos: &Position) -> (u8, u8) { // dont use in engine, only for showing
                                                          // the board, not really efficient
         for p in 0..6 {
             for s in 0..2 {
-                if self.pieces[s][p] & BitBoard(1 << col+row*8) != BitBoard(0) {
+                if self.pieces[s][p] & BitBoard(1 << pos.col+pos.row*8) != BitBoard(0) {
                     return (p as u8, s as u8);
                 }
             }
@@ -83,5 +117,18 @@ impl Board {
         self.flags &= !(7 << 5); // set the three bits to 0
         self.flags |= pos << 5; // set the pos to the three bits
         println!("set passant to {}", pos)
+    }
+
+    pub fn get_all_possible_moves(&self, pos: &Position) -> Vec<Move> {
+        let p = self.get(&pos);
+        return match p.0 {
+            Pieces::PAWN => pawn::get_all_moves(self, pos),
+            Pieces::KNIGHT => knight::get_all_moves(self, pos),
+            Pieces::BISHOP => sliding_pieces::get_all_moves_bishop(self, pos),
+            Pieces::ROOK => sliding_pieces::get_all_moves_rook(self, pos),
+            Pieces::QUEEN => sliding_pieces::get_all_moves_queen(self, pos),
+            Pieces::KING => king::get_all_moves(self, pos),
+            _ => vec![],
+        }
     }
 }

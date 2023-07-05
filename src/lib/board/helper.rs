@@ -1,5 +1,4 @@
-use super::Board;
-use super::BitBoard;
+use super::{Board, BitBoard, Position};
 
 pub struct Sides;
 impl Sides {
@@ -45,18 +44,18 @@ pub fn load_board_from_fen(board: &mut Board, fen: &str) -> Result<(), String> {
                 col = 0;
                 row -= 1;
             },
-            'P' => { board.set(col, row, Pieces::PAWN, Sides::WHITE); col += 1 },
-            'N' => { board.set(col, row, Pieces::KNIGHT, Sides::WHITE); col += 1 },
-            'B' => { board.set(col, row, Pieces::BISHOP, Sides::WHITE); col += 1 },
-            'R' => { board.set(col, row, Pieces::ROOK, Sides::WHITE); col += 1 },
-            'Q' => { board.set(col, row, Pieces::QUEEN, Sides::WHITE); col += 1 },
-            'K' => { board.set(col, row, Pieces::KING, Sides::WHITE); col += 1 },
-            'p' => { board.set(col, row, Pieces::PAWN, Sides::BLACK); col += 1 },
-            'n' => { board.set(col, row, Pieces::KNIGHT, Sides::BLACK); col += 1 },
-            'b' => { board.set(col, row, Pieces::BISHOP, Sides::BLACK); col += 1 },
-            'r' => { board.set(col, row, Pieces::ROOK, Sides::BLACK); col += 1 },
-            'q' => { board.set(col, row, Pieces::QUEEN, Sides::BLACK); col += 1 },
-            'k' => { board.set(col, row, Pieces::KING, Sides::BLACK); col += 1 },
+            'P' => { board.set(&Position::new(col, row), Pieces::PAWN, Sides::WHITE); col += 1 },
+            'N' => { board.set(&Position::new(col, row), Pieces::KNIGHT, Sides::WHITE); col += 1 },
+            'B' => { board.set(&Position::new(col, row), Pieces::BISHOP, Sides::WHITE); col += 1 },
+            'R' => { board.set(&Position::new(col, row), Pieces::ROOK, Sides::WHITE); col += 1 },
+            'Q' => { board.set(&Position::new(col, row), Pieces::QUEEN, Sides::WHITE); col += 1 },
+            'K' => { board.set(&Position::new(col, row), Pieces::KING, Sides::WHITE); col += 1 },
+            'p' => { board.set(&Position::new(col, row), Pieces::PAWN, Sides::BLACK); col += 1 },
+            'n' => { board.set(&Position::new(col, row), Pieces::KNIGHT, Sides::BLACK); col += 1 },
+            'b' => { board.set(&Position::new(col, row), Pieces::BISHOP, Sides::BLACK); col += 1 },
+            'r' => { board.set(&Position::new(col, row), Pieces::ROOK, Sides::BLACK); col += 1 },
+            'q' => { board.set(&Position::new(col, row), Pieces::QUEEN, Sides::BLACK); col += 1 },
+            'k' => { board.set(&Position::new(col, row), Pieces::KING, Sides::BLACK); col += 1 },
             _ => return Err("FEN parse error: illegal symbol in group 1".to_string())
         } 
     }

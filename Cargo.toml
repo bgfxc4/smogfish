@@ -12,3 +12,4 @@ name = "tui"
 path = "src/tui/main.rs"
 
 [dependencies]
+colored = "2.0.1"
