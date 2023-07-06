@@ -8,20 +8,22 @@ pub fn main() {
     let mut board_buffer: [String; 8] = ["".to_string(), "".to_string(), "".to_string(), "".to_string(), "".to_string(), "".to_string(), "".to_string(), "".to_string()];
     let mut cursor_pos: Position = Position::new(3, 1);
      
-    let b = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    let mut b = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 
     loop {
         fill_board_buffer(&b, &mut board_buffer);
 
         let mut possible_moves: Vec<Move> = vec![];
-        get_possible_moves(&b, &cursor_pos, &mut possible_moves);
+        if (b.get(&cursor_pos).1 == Sides::WHITE) == b.is_white_to_play() {
+            get_possible_moves(&b, &cursor_pos, &mut possible_moves);
+        }
 
         print_board_buffer(&board_buffer, &cursor_pos, &possible_moves);
 
         let mut input = String::new();
         match io::stdin().read_line(&mut input) {
             Ok(_) => {
-                handle_input(&input, &mut cursor_pos);
+                handle_input(&mut b, &input, &mut cursor_pos, &possible_moves);
             }
             Err(error) => println!("error: {}", error),
         }
@@ -76,13 +78,27 @@ fn print_board_buffer(bb: &[String; 8], cursor_pos: &Position, possible_moves: &
     println!("   a b c d e f g h");
 }
 
-fn handle_input(input: &String, cursor_pos: &mut Position) {
+fn handle_input(board: &mut Board, input: &String, cursor_pos: &mut Position, possible_moves: &Vec<Move>) {
     match input.trim() {
         "w" => cursor_pos.row += 1,
         "s" => cursor_pos.row -= 1,
         "d" => cursor_pos.col += 1,
         "a" => cursor_pos.col -= 1,
-        _ => println!("Invalid command!")
+        cmd => {
+            let mut chars = cmd.chars().into_iter();
+            let col = chars.nth(0);
+            let row = chars.nth(0);
+            if (chars.count() == 0) && (col.unwrap().is_ascii()) && (row.unwrap().is_digit(10)) { // position got entered
+                let pos = Position::new((col.unwrap() as u32 - 97) as u8, (row.unwrap().to_digit(10).unwrap() - 1) as u8);
+                let mov = possible_moves.iter().find(|&m| &m.from == cursor_pos && m.to == pos);
+                if mov.is_some() {
+                    board.make_move(mov.unwrap());
+                    return
+                }
+            }
+
+            println!("Invalid command!");
+        }
     }
 }
 

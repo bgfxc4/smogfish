@@ -104,5 +104,8 @@ pub fn load_board_from_fen(board: &mut Board, fen: &str) -> Result<(), String> {
         Err(_) => return Err("FEN parse error: illegal symbol in group 6".to_string())
     }
 
+    board.generate_total_bitboards(Sides::WHITE);
+    board.generate_total_bitboards(Sides::BLACK);
+
     return Ok(());
 }
