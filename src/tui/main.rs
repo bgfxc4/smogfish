@@ -88,7 +88,7 @@ fn handle_input(board: &mut Board, input: &String, cursor_pos: &mut Position, po
             let mut chars = cmd.chars().into_iter();
             let col = chars.nth(0);
             let row = chars.nth(0);
-            if (chars.count() == 0) && (col.unwrap().is_ascii()) && (row.unwrap().is_digit(10)) { // position got entered
+            if row.is_some() && chars.count() == 0 && (col.unwrap().is_ascii()) && (row.unwrap().is_digit(10)) { // position got entered
                 let pos = Position::new((col.unwrap() as u32 - 97) as u8, (row.unwrap().to_digit(10).unwrap() - 1) as u8);
                 let mov = possible_moves.iter().find(|&m| &m.from == cursor_pos && m.to == pos);
                 if mov.is_some() {

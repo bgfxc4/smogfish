@@ -86,7 +86,7 @@ pub fn load_board_from_fen(board: &mut Board, fen: &str) -> Result<(), String> {
         if c > 7 {
             return Err("FEN parse error: illegal symbol in group 4".to_string())
         }
-        board.set_en_passant(c as u8);
+        board.set_en_passant(c as u16);
     }
 
     // fifth group: half moves
