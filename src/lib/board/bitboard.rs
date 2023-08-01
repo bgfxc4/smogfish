@@ -1,4 +1,4 @@
-use std::ops::{BitAnd, BitOr, Mul, BitOrAssign, BitAndAssign};
+use std::ops::{BitAnd, BitOr, Mul, BitOrAssign, BitAndAssign, Not};
 
 #[derive(PartialEq, Eq, PartialOrd, Clone, Copy, Debug, Default, Hash)]
 pub struct BitBoard(pub u64);
@@ -44,3 +44,23 @@ impl BitOrAssign for BitBoard {
     }
 }
 
+impl Not for BitBoard {
+    type Output = BitBoard;
+
+    #[inline]
+    fn not(self) -> Self {
+        BitBoard(!self.0)
+    }
+}
+
+impl BitBoard {
+    pub fn print(&self) {
+        for row in (0..8).rev() {
+            for col in 0..8 {
+                print!("{} ", if *self & BitBoard(1 << row*8+col) == BitBoard(0) { 0 } else { 1 });
+            }
+            println!();
+        }
+        println!();
+    }
+}

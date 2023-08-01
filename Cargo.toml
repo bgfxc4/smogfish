@@ -13,3 +13,4 @@ path = "src/tui/main.rs"
 
 [dependencies]
 colored = "2.0.1"
+lazy_static = "1.4.0"

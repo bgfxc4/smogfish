@@ -9,6 +9,7 @@ pub fn main() {
     let mut cursor_pos: Position = Position::new(3, 1);
      
     let mut b = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    // let mut b = Board::new("2k2Q2/8/8/8/1Q6/8/8/2K5 w - - 0 1");
 
     loop {
         fill_board_buffer(&b, &mut board_buffer);

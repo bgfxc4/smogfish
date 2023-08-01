@@ -1,3 +1,4 @@
+use super::bitboard::BitBoard;
 use super::helper::Pieces;
 use super::helper::Sides;
 use super::{Position, Board, Move};
@@ -44,4 +45,24 @@ pub fn get_all_moves_pseudolegal(board: &Board, pos: &Position, moves: &mut Vec<
             moves.push(Move::new_with_flags(pos, &p, 1));
         }
     }
+}
+
+pub fn get_all_attacks(board: &Board, pos: &Position) -> BitBoard {
+    let mut ret = BitBoard(0);
+    let white_to_play = board.is_white_to_play();
+    let modi: i8 = if white_to_play { -1 } else { 1 };
+    
+    // take right
+    if pos.col != 7 {
+        // check for piece on target square not necessary here
+        let p = Position::new(pos.col+1, ((pos.row as i8)+modi) as u8);
+        ret |= BitBoard(1 << (p.row*8+p.col));
+    }
+
+    // take left
+    if pos.col != 0 {
+        let p = Position::new(pos.col-1, ((pos.row as i8)+modi) as u8);
+        ret |= BitBoard(1 << (p.row*8+p.col));
+    }
+    ret
 }
