@@ -28,13 +28,21 @@ pub fn get_all_attacks_queen(board: &Board, pos: &Position, color: u8) -> BitBoa
 }
 
 pub fn get_all_moves_sliding_pseudolegal(board: &Board, pos: &Position, moves: &mut Vec<Move>, start_dir: usize, end_dir: usize) {
+    // when the king is in double-check, the king has to move
+    if board.king_attacker_count > 1 {
+        return
+    }
     let square_idx = (pos.row*8+pos.col) as usize;
 
     for dir_idx in start_dir .. end_dir {
         let dir = PRECOMPUTED_LOOKUPS.DIRECTION_OFFSETS[dir_idx as usize] as i8;
-        for n in 0..PRECOMPUTED_LOOKUPS.NUM_SQUARES_TO_EDGE[square_idx][dir_idx] {
-
+        for n in 0..PRECOMPUTED_LOOKUPS.NUM_SQUARES_TO_EDGE[square_idx][dir_idx] { 
             let target_square = square_idx as i8 + dir * (n+1);
+            if board.king_attacker_count == 1 &&
+                (board.king_attacker_mask | board.king_attacker_block_mask) & BitBoard(1 << target_square) == BitBoard(0) {
+                continue;
+            }
+
             let target_piece = board.get_by_idx(target_square as u8);
 
             // target square is not empty and there is a friendly piece => stop search in this direction

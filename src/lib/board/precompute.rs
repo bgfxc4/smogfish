@@ -1,4 +1,6 @@
 use std::cmp;
+use crate::board::helper::Sides;
+
 use super::BitBoard;
 
 lazy_static! {
@@ -6,6 +8,7 @@ lazy_static! {
         NUM_SQUARES_TO_EDGE: precompute_num_squares_to_edge(),
         DIRECTION_OFFSETS: [8, -8, -1, 1, 7, -7, 9, -9],
         KNIGHT_ATTACKS: precompute_knight_attacks(),
+        KING_PAWN_ATTACKS: precompute_king_pawn_attacks(),
     };
 }
 #[allow(non_snake_case)]
@@ -13,6 +16,7 @@ pub struct PrecomputedLookups {
     pub NUM_SQUARES_TO_EDGE: [[i8; 8]; 64],
     pub DIRECTION_OFFSETS: [i8; 8],
     pub KNIGHT_ATTACKS: [BitBoard; 64],
+    pub KING_PAWN_ATTACKS: [[BitBoard; 64]; 2],
 }
 
 fn precompute_num_squares_to_edge() -> [[i8; 8]; 64] {
@@ -62,6 +66,31 @@ fn precompute_knight_attacks() -> [BitBoard; 64] {
                     continue;
                 }
                 ret[square_idx as usize] |= BitBoard(1 << (p.0*8 + p.1));
+            }
+        } 
+    } 
+    println!("Done!");
+    ret
+}
+
+fn precompute_king_pawn_attacks() -> [[BitBoard; 64]; 2] {
+    println!("Precomputing king pawn attacks...");
+    let mut ret = [[BitBoard(0); 64]; 2];
+
+    for row in 0..8 as i8 {
+        for col in 0..8 as i8 {
+            let square_idx = row*8 + col;
+            let possible_attacks = [
+                (row + 1, col + 1, Sides::WHITE),
+                (row + 1, col - 1, Sides::WHITE),
+                (row - 1, col + 1, Sides::BLACK),
+                (row - 1, col - 1, Sides::BLACK),
+            ];
+            for p in possible_attacks {
+                if p.0 > 7 || p.0 < 0 || p.1 > 7 || p.1 < 0 {
+                    continue;
+                }
+                ret[p.2 as usize][square_idx as usize] |= BitBoard(1 << (p.0*8 + p.1));
             }
         } 
     } 

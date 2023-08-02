@@ -63,4 +63,14 @@ impl BitBoard {
         }
         println!();
     }
+
+    pub fn count_set_bits(&self) -> u8 {
+        let mut ret: u8 = 0;
+        let mut n = self.0;
+        while n != 0 {
+            n &= n-1;
+            ret += 1;
+        }
+        ret
+    }
 }

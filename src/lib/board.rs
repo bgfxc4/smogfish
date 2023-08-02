@@ -52,6 +52,9 @@ pub struct Board {
     check_mask: BitBoard, // marks every square, where a piece of the player, who just made a move
                           // is attacking. This bitboard ignores the king of the player whos turn
                           // it is
+    king_attacker_count: u8,
+    king_attacker_mask: BitBoard,
+    king_attacker_block_mask: BitBoard,
     flags: u16, // side_to_play,
                 // white_castle_short, white_castle_long, black_castle_short, black_castle_long
                 // (all 1 bit)
@@ -68,6 +71,9 @@ impl Board {
             white_total: BitBoard(0),
             black_total: BitBoard(0),
             check_mask: BitBoard(0),
+            king_attacker_count: 0,
+            king_attacker_mask: BitBoard(0),
+            king_attacker_block_mask: BitBoard(0),
             flags: 0,
             half_moves: 0,
             full_moves: 0};
@@ -176,11 +182,15 @@ impl Board {
     }
 
     fn generate_check_mask(&mut self, color: u8) {
+        let mut king_pos: u8 = 0;
         self.check_mask = BitBoard(0);
         for idx in 0..64 {
             let pos = &Position { col: idx%8, row: idx/8 };
             let piece = self.get_by_idx(idx);
             if piece.1 != color {
+                if piece.0 == Pieces::KING {
+                    king_pos = idx;
+                }
                 continue;
             }
             self.check_mask |= match piece.0 {
@@ -193,6 +203,19 @@ impl Board {
                 _ => BitBoard(0),
             };
         }
+        self.check_mask.print();
+        if (self.check_mask & BitBoard(1 << king_pos)) != BitBoard(0) {
+            king::calc_king_attacker_masks(self, king_pos);
+            self.king_attacker_count = self.king_attacker_mask.count_set_bits();
+
+            println!("King is in check: {} attackers", self.king_attacker_count);
+            self.king_attacker_mask.print();
+            self.king_attacker_block_mask.print();
+        } else {
+            self.king_attacker_count = 0;
+            self.king_attacker_block_mask = BitBoard(0);
+            self.king_attacker_mask = BitBoard(0);
+        }
     }
 
     #[inline]
@@ -202,11 +225,15 @@ impl Board {
 
     pub fn make_move(&mut self, mov: &Move) {
         let p = self.get(&mov.from);
-        let move_is_capture = self.get(&mov.to).0 != Pieces::EMPTY;
+        let target_piece = self.get(&mov.to);
+        let move_is_capture = target_piece.0 != Pieces::EMPTY;
         let (side_to_play, oponent_side) = if self.is_white_to_play() { (Sides::WHITE, Sides::BLACK) } else { (Sides::BLACK, Sides::WHITE) };
 
 
         self.clear_bit(&mov.from, p.0, side_to_play);
+        if move_is_capture {
+            self.clear_bit(&mov.to, target_piece.0, target_piece.1);
+        }
         self.set(&mov.to, p.0, p.1);
 
         if mov.flag == 1 { // move is en passant

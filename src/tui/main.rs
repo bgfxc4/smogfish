@@ -8,7 +8,8 @@ pub fn main() {
     let mut board_buffer: [String; 8] = ["".to_string(), "".to_string(), "".to_string(), "".to_string(), "".to_string(), "".to_string(), "".to_string(), "".to_string()];
     let mut cursor_pos: Position = Position::new(3, 1);
      
-    let mut b = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    // let mut b = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    let mut b = Board::new("rnbqkbnr/ppp1p1pp/8/1N1p1p2/Q2PP3/8/PPP2PPP/RNB1KB1R w KQkq - 0 1");
     // let mut b = Board::new("2k2Q2/8/8/8/1Q6/8/8/2K5 w - - 0 1");
 
     loop {
