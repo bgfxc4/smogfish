@@ -8,6 +8,11 @@ pub fn get_all_moves(board: &Board, pos: &Position, moves: &mut Vec<Move>) {
         return
     }
     let square_index = (pos.row*8 + pos.col) as i8;
+    let is_pinned = board.pinned_pieces & BitBoard(1 << square_index) != BitBoard(0);
+    if is_pinned {
+        return
+    }
+
     let mut attack_mask = PRECOMPUTED_LOOKUPS.KNIGHT_ATTACKS[square_index as usize];
     
     if board.is_white_to_play() {

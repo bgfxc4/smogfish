@@ -55,10 +55,15 @@ pub struct Board {
     king_attacker_count: u8,
     king_attacker_mask: BitBoard,
     king_attacker_block_mask: BitBoard,
+    pinned_pieces: BitBoard,
+    pinned_pieces_move_mask: BitBoard,
+    en_passant_pinned_piece: u8, // stores, if a pawn can not take en passant. This can only be one
+                                 // pawn at once and the tile index of it is stored here.
+                                 // 65 -> empty
     flags: u16, // side_to_play,
                 // white_castle_short, white_castle_long, black_castle_short, black_castle_long
                 // (all 1 bit)
-                // en_passant_pos (4 bit number, 0-7, side is clear by active color, 13 (111b) to
+                // en_passant_pos (4 bit number, 0-7, side is clear by active color, 15 (1111b) to
                 // signal no en passant)
     half_moves: u8, // for fifty move rule
     full_moves: u16,
@@ -74,6 +79,9 @@ impl Board {
             king_attacker_count: 0,
             king_attacker_mask: BitBoard(0),
             king_attacker_block_mask: BitBoard(0),
+            pinned_pieces: BitBoard(0),
+            pinned_pieces_move_mask: BitBoard(0),
+            en_passant_pinned_piece: 65,
             flags: 0,
             half_moves: 0,
             full_moves: 0};
@@ -146,13 +154,13 @@ impl Board {
     }
 
     fn set_en_passant(&mut self, pos: u16) {
-        self.flags &= !(13 << 5); // set the four bits to 0
+        self.flags &= !(15 << 5); // set the four bits to 0
         self.flags |= pos << 5; // set the pos to the four bits
     }
 
     fn get_en_passant(&self) -> u16 {
         let ret = self.flags >> 5; // bring four bits to the front
-        return ret & (13); // set everyting else to 0
+        return ret & (15); // set everyting else to 0
     }
 
     pub fn get_all_possible_moves(&self, pos: &Position) -> Vec<Move> {
@@ -203,19 +211,16 @@ impl Board {
                 _ => BitBoard(0),
             };
         }
-        self.check_mask.print();
         if (self.check_mask & BitBoard(1 << king_pos)) != BitBoard(0) {
             king::calc_king_attacker_masks(self, king_pos);
             self.king_attacker_count = self.king_attacker_mask.count_set_bits();
-
-            println!("King is in check: {} attackers", self.king_attacker_count);
-            self.king_attacker_mask.print();
-            self.king_attacker_block_mask.print();
         } else {
             self.king_attacker_count = 0;
             self.king_attacker_block_mask = BitBoard(0);
             self.king_attacker_mask = BitBoard(0);
         }
+
+        king::calc_pinned_pieces(self, king_pos);
     }
 
     #[inline]
@@ -256,7 +261,7 @@ impl Board {
         }
         self.set_color_to_move(next_color_to_move);
         if mov.flag != 2 { // if en passant didnt just get triggered, reset it
-            self.set_en_passant(13);
+            self.set_en_passant(15);
         }
 
         self.generate_total_bitboard(side_to_play);

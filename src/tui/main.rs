@@ -9,7 +9,7 @@ pub fn main() {
     let mut cursor_pos: Position = Position::new(3, 1);
      
     // let mut b = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-    let mut b = Board::new("rnbqkbnr/ppp1p1pp/8/1N1p1p2/Q2PP3/8/PPP2PPP/RNB1KB1R w KQkq - 0 1");
+    let mut b = Board::new("8/2p5/8/K2P2Q1/8/8/7k/8 b - - 0 1");
     // let mut b = Board::new("2k2Q2/8/8/8/1Q6/8/8/2K5 w - - 0 1");
 
     loop {

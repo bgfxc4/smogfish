@@ -34,6 +34,12 @@ pub fn get_all_moves_sliding_pseudolegal(board: &Board, pos: &Position, moves: &
     }
     let square_idx = (pos.row*8+pos.col) as usize;
 
+    let is_pinned = board.pinned_pieces & BitBoard(1 << square_idx) != BitBoard(0);
+    // if king is in check, no pinned piece has a legal move
+    if is_pinned && board.king_attacker_count != 0 {
+        return
+    }
+
     for dir_idx in start_dir .. end_dir {
         let dir = PRECOMPUTED_LOOKUPS.DIRECTION_OFFSETS[dir_idx as usize] as i8;
         for n in 0..PRECOMPUTED_LOOKUPS.NUM_SQUARES_TO_EDGE[square_idx][dir_idx] { 
@@ -41,6 +47,10 @@ pub fn get_all_moves_sliding_pseudolegal(board: &Board, pos: &Position, moves: &
             if board.king_attacker_count == 1 &&
                 (board.king_attacker_mask | board.king_attacker_block_mask) & BitBoard(1 << target_square) == BitBoard(0) {
                 continue;
+            }
+
+            if is_pinned && board.pinned_pieces_move_mask & BitBoard(1 << target_square) == BitBoard(0) {
+                break;
             }
 
             let target_piece = board.get_by_idx(target_square as u8);
