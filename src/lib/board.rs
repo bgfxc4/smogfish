@@ -31,7 +31,7 @@ impl PartialEq for Position {
 pub struct Move {
     pub from: Position,
     pub to: Position,
-    pub flag: u8, // 1 -> is_en_passant, 2 -> triggers_en_passant, 3 -> castle_short, 4 -> castle_long
+    pub flag: u8, // 1 -> is_en_passant, 2 -> triggers_en_passant, 3 -> castle_short, 4 -> castle_long, 5 -> promote queen, 6 -> promote rook, 7 -> promote bishop, 8 -> promote knight
 }
 
 impl Move {
@@ -239,7 +239,14 @@ impl Board {
         if move_is_capture {
             self.clear_bit(&mov.to, target_piece.0, target_piece.1);
         }
-        self.set(&mov.to, p.0, p.1);
+
+        match mov.flag { // if promotion, set new piece on target instead of old one
+            5 => self.set(&mov.to, Pieces::QUEEN, p.1),
+            6 => self.set(&mov.to, Pieces::ROOK, p.1),
+            7 => self.set(&mov.to, Pieces::BISHOP, p.1),
+            8 => self.set(&mov.to, Pieces::KNIGHT, p.1),
+            _ => self.set(&mov.to, p.0, p.1),
+        } 
 
         if mov.flag == 1 { // move is en passant
             // TODO: better and more efficient board.clear_field to avoid use of board.get here

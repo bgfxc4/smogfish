@@ -9,7 +9,7 @@ pub fn main() {
     let mut cursor_pos: Position = Position::new(3, 1);
      
     // let mut b = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-    let mut b = Board::new("8/2p5/8/K2P2Q1/8/8/7k/8 b - - 0 1");
+    let mut b = Board::new("8/1P5P/8/8/7k/K7/4p3/8 w - - 0 1");
     // let mut b = Board::new("2k2Q2/8/8/8/1Q6/8/8/2K5 w - - 0 1");
 
     loop {
@@ -93,14 +93,39 @@ fn handle_input(board: &mut Board, input: &String, cursor_pos: &mut Position, po
             if row.is_some() && chars.count() == 0 && (col.unwrap().is_ascii()) && (row.unwrap().is_digit(10)) { // position got entered
                 let pos = Position::new((col.unwrap() as u32 - 97) as u8, (row.unwrap().to_digit(10).unwrap() - 1) as u8);
                 let mov = possible_moves.iter().find(|&m| &m.from == cursor_pos && m.to == pos);
-                if mov.is_some() {
-                    board.make_move(mov.unwrap());
-                    return
+                match mov {
+                    Some(m) => {
+                        if m.flag >= 5 && m.flag <= 8 {
+                            make_promotion_move(board, m);
+                        } else {
+                            board.make_move(m);
+                        }
+
+                        return
+                    },
+                    None => {},
                 }
             }
 
             println!("Invalid command!");
         }
+    }
+}
+
+fn make_promotion_move(board: &mut Board, mov: &Move) {
+    println!("To which piece do you want to promote? (Q/R/B/K)");
+    let mut input = String::new();
+    match io::stdin().read_line(&mut input) {
+        Ok(_) => {
+            match input.chars().nth(0) {
+                Some('Q') => board.make_move(&Move::new_with_flags(&mov.from, &mov.to, 5)),
+                Some('R') => board.make_move(&Move::new_with_flags(&mov.from, &mov.to, 6)),
+                Some('B') => board.make_move(&Move::new_with_flags(&mov.from, &mov.to, 7)),
+                Some('K') => board.make_move(&Move::new_with_flags(&mov.from, &mov.to, 8)),
+                _ => println!("Not a valid promotion"),
+            }
+        }
+        Err(error) => println!("error: {}", error),
     }
 }
 

@@ -22,17 +22,24 @@ pub fn get_all_moves_pseudolegal(board: &Board, pos: &Position, moves: &mut Vec<
         (!is_pinned || board.pinned_pieces_move_mask & BitBoard(1 << (p.col+p.row*8)) != BitBoard(0)) {
 
         if board.get(&p).0 == Pieces::EMPTY {
-            moves.push(Move::new(pos, &p));
+            if (white_to_play && p.row == 7) || !white_to_play && p.row == 0 {
+                moves.push(Move::new_with_flags(pos, &p, 5));
+                moves.push(Move::new_with_flags(pos, &p, 6));
+                moves.push(Move::new_with_flags(pos, &p, 7));
+                moves.push(Move::new_with_flags(pos, &p, 8));
+            } else {
+                moves.push(Move::new(pos, &p));
+            }
         }
     }
 
     // move two forward
     let p = Position::new(pos.col, ((pos.row as i8)+modi*2) as u8);
-    if board.king_attacker_count != 1 || attacker_and_block_mask & BitBoard(1 << (p.col+p.row*8)) != BitBoard(0) &&
-        (!is_pinned || board.pinned_pieces_move_mask & BitBoard(1 << (p.col+p.row*8)) != BitBoard(0)) {
+    let is_in_start_pos = (modi == 1 && pos.row == 1) || (modi == -1 && pos.row == 6);
+    if is_in_start_pos && (board.king_attacker_count != 1 || attacker_and_block_mask & BitBoard(1 << (p.col+p.row*8)) != BitBoard(0) &&
+        (!is_pinned || board.pinned_pieces_move_mask & BitBoard(1 << (p.col+p.row*8)) != BitBoard(0))) {
 
-        let is_in_start_pos = (modi == 1 && pos.row == 1) || (modi == -1 && pos.row == 6);
-        if is_in_start_pos && board.get(&p).0 == Pieces::EMPTY &&
+        if board.get(&p).0 == Pieces::EMPTY &&
             board.get(&Position::new(pos.col, ((pos.row as i8)+modi) as u8)).0 == Pieces::EMPTY {
             moves.push(Move::new_with_flags(pos, &p, 2));
         }
@@ -47,7 +54,14 @@ pub fn get_all_moves_pseudolegal(board: &Board, pos: &Position, moves: &mut Vec<
             let piece = board.get(&p);
 
             if ((piece.1 == Sides::WHITE) != white_to_play) && piece.0 != Pieces::EMPTY {
-                moves.push(Move::new(pos, &p));
+                if (white_to_play && p.row == 7) || !white_to_play && p.row == 0 {
+                    moves.push(Move::new_with_flags(pos, &p, 5));
+                    moves.push(Move::new_with_flags(pos, &p, 6));
+                    moves.push(Move::new_with_flags(pos, &p, 7));
+                    moves.push(Move::new_with_flags(pos, &p, 8));
+                } else {
+                    moves.push(Move::new(pos, &p));
+                }
             } else if (white_to_play && (p.row == 5) && (en_passant == p.col as u16)) || // en passant
                       (!white_to_play && (p.row == 2) && (en_passant == p.col as u16)) {
                 if board.en_passant_pinned_piece == 65 { // there can only be one en passant on the
@@ -67,7 +81,14 @@ pub fn get_all_moves_pseudolegal(board: &Board, pos: &Position, moves: &mut Vec<
 
             let piece = board.get(&p);
             if ((piece.1 == Sides::WHITE) != white_to_play) && piece.0 != Pieces::EMPTY {
-                moves.push(Move::new(pos, &p));
+                if (white_to_play && p.row == 7) || !white_to_play && p.row == 0 {
+                    moves.push(Move::new_with_flags(pos, &p, 5));
+                    moves.push(Move::new_with_flags(pos, &p, 6));
+                    moves.push(Move::new_with_flags(pos, &p, 7));
+                    moves.push(Move::new_with_flags(pos, &p, 8));
+                } else {
+                    moves.push(Move::new(pos, &p));
+                }
             } else if (white_to_play && p.row == 5 && en_passant == p.col as u16) || // en passant
                       (!white_to_play && p.row == 2 && en_passant == p.col as u16) {
                 if board.en_passant_pinned_piece == 65 {
