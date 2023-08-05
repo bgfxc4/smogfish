@@ -10,6 +10,9 @@ use bitboard::BitBoard;
 
 use std::cmp::PartialEq;
 
+use self::{precompute::PRECOMPUTED_LOOKUPS, helper::GameState};
+
+#[derive(Clone)]
 pub struct Position {
     pub col: u8,
     pub row: u8,
@@ -28,6 +31,7 @@ impl PartialEq for Position {
     }
 }
 
+#[derive(Clone)]
 pub struct Move {
     pub from: Position,
     pub to: Position,
@@ -44,8 +48,9 @@ impl Move {
     }
 }
 
-
+#[derive(Clone)]
 pub struct Board {
+    pub game_state: u8,
     pieces: [[BitBoard; 6]; 2],
     white_total: BitBoard,
     black_total: BitBoard,
@@ -67,12 +72,15 @@ pub struct Board {
                 // signal no en passant)
     half_moves: u8, // for fifty move rule
     full_moves: u16,
+    zobrist_history: [u64; 101], // for threefold repetition, indexed by halfmoves 
+    pub move_list: Vec<Move>,
 }
 
 impl Board {
     pub fn new(fen: &str) ->Self {
         lazy_static::initialize(&precompute::PRECOMPUTED_LOOKUPS);
         let mut b: Self = Board { pieces: [[BitBoard(0); 6]; 2],
+            game_state: GameState::PLAYING,
             white_total: BitBoard(0),
             black_total: BitBoard(0),
             check_mask: BitBoard(0),
@@ -84,7 +92,10 @@ impl Board {
             en_passant_pinned_piece: 65,
             flags: 0,
             half_moves: 0,
-            full_moves: 0};
+            full_moves: 0,
+            zobrist_history: [0; 101],
+            move_list: vec![],
+        };
         helper::load_board_from_fen(&mut b, fen).unwrap();
         return b;
     }
@@ -137,6 +148,26 @@ impl Board {
         }
     }
 
+    #[inline]
+    fn castle_white_short(&self) -> bool {
+        self.flags & 1 << 1 != 0
+    }
+
+    #[inline]
+    fn castle_white_long(&self) -> bool {
+        self.flags & 1 << 2 != 0
+    }
+
+    #[inline]
+    fn castle_black_short(&self) -> bool {
+        self.flags & 1 << 3 != 0
+    }
+
+    #[inline]
+    fn castle_black_long(&self) -> bool {
+        self.flags & 1 << 4 != 0
+    }
+
     fn remove_castling_right(&mut self, color: u8, is_long: bool) {
         if color == Sides::WHITE {
             if is_long {
@@ -163,6 +194,36 @@ impl Board {
         return ret & (15); // set everyting else to 0
     }
 
+    fn compute_zobrist_hash(&self) -> u64 {
+        let mut hash_value = 0;
+        for i in 0..64 {
+            for p in 0..Pieces::EMPTY {
+                if self.pieces[Sides::WHITE as usize][p as usize] & BitBoard(1 << i) != BitBoard(0) {
+                    hash_value ^= PRECOMPUTED_LOOKUPS.ZOBRIST_HASH_TABLE[i][p as usize];
+                } else if self.pieces[Sides::BLACK as usize][p as usize] & BitBoard(1 << i) != BitBoard(0) {
+                    hash_value ^= PRECOMPUTED_LOOKUPS.ZOBRIST_HASH_TABLE[i][p as usize + 6];
+                }
+            }
+        }
+        if !self.is_white_to_play() {
+            hash_value ^= PRECOMPUTED_LOOKUPS.ZOBRIST_SPECIAL_KEYS[0];
+        }
+        if self.castle_white_short() {
+            hash_value ^= PRECOMPUTED_LOOKUPS.ZOBRIST_SPECIAL_KEYS[1];
+        }
+        if self.castle_white_long() {
+            hash_value ^= PRECOMPUTED_LOOKUPS.ZOBRIST_SPECIAL_KEYS[2];
+        }
+        if self.castle_black_short() {
+            hash_value ^= PRECOMPUTED_LOOKUPS.ZOBRIST_SPECIAL_KEYS[3];
+        }
+        if self.castle_black_long() {
+            hash_value ^= PRECOMPUTED_LOOKUPS.ZOBRIST_SPECIAL_KEYS[4];
+        }
+
+        hash_value
+    }
+
     pub fn get_all_possible_moves(&self, pos: &Position) -> Vec<Move> {
         let mut pseudolegal_moves: Vec<Move> = vec![];
         let p = self.get(&pos);
@@ -179,6 +240,28 @@ impl Board {
         // TODO: filter out illegal moves
 
         return pseudolegal_moves;
+    }
+
+    pub fn generate_move_list(&mut self) {
+        self.move_list.clear();
+        let mut move_list: Vec<Move> = vec![];
+        let side_to_play = if self.is_white_to_play() { Sides::WHITE } else { Sides::BLACK };
+        for p in 0..6 {
+            for i in 0..64 {
+                if self.pieces[side_to_play as usize][p] & BitBoard(1 << i) != BitBoard(0) {
+                    match p as u8 {
+                        Pieces::PAWN => pawn::get_all_moves_pseudolegal(self, &Position { col: i%8, row: i/8 }, &mut move_list),
+                        Pieces::KNIGHT => knight::get_all_moves(self, &Position { col: i%8, row: i/8 }, &mut move_list),
+                        Pieces::BISHOP => sliding_pieces::get_all_moves_bishop_pseudolegal(self, &Position { col: i%8, row: i/8 }, &mut move_list),
+                        Pieces::ROOK => sliding_pieces::get_all_moves_rook_pseudolegal(self, &Position { col: i%8, row: i/8 }, &mut move_list),
+                        Pieces::QUEEN => sliding_pieces::get_all_moves_queen_pseudolegal(self, &Position { col: i%8, row: i/8 }, &mut move_list),
+                        Pieces::KING => king::get_all_moves_pseudolegal(self, &Position { col: i%8, row: i/8 }, &mut move_list),
+                        _ => (),
+                    };
+                }
+            }
+        }
+        self.move_list = move_list;
     }
 
     fn generate_total_bitboard(&mut self, color: u8) {
@@ -240,12 +323,40 @@ impl Board {
             self.clear_bit(&mov.to, target_piece.0, target_piece.1);
         }
 
-        match mov.flag { // if promotion, set new piece on target instead of old one
-            5 => self.set(&mov.to, Pieces::QUEEN, p.1),
+        self.set(&mov.to, p.0, p.1);
+
+        match mov.flag {
+            3 => {
+                if side_to_play == Sides::WHITE {
+                    self.clear_bit(&Position { col: 7, row: 0 }, Pieces::ROOK, Sides::WHITE);
+                    self.set(&Position { col: 5, row: 0 }, Pieces::ROOK, Sides::WHITE);
+                    self.remove_castling_right(Sides::WHITE, false);
+                    self.remove_castling_right(Sides::WHITE, true);
+                } else {
+                    self.clear_bit(&Position { col: 7, row: 7 }, Pieces::ROOK, Sides::BLACK);
+                    self.set(&Position { col: 5, row: 7 }, Pieces::ROOK, Sides::BLACK);
+                    self.remove_castling_right(Sides::BLACK, false);
+                    self.remove_castling_right(Sides::BLACK, true);
+                }
+            },
+            4 => {
+                if side_to_play == Sides::WHITE {
+                    self.clear_bit(&Position { col: 0, row: 0 }, Pieces::ROOK, Sides::WHITE);
+                    self.set(&Position { col: 3, row: 0 }, Pieces::ROOK, Sides::WHITE);
+                    self.remove_castling_right(Sides::WHITE, false);
+                    self.remove_castling_right(Sides::WHITE, true);
+                } else {
+                    self.clear_bit(&Position { col: 0, row: 7 }, Pieces::ROOK, Sides::BLACK);
+                    self.set(&Position { col: 3, row: 7 }, Pieces::ROOK, Sides::BLACK);
+                    self.remove_castling_right(Sides::BLACK, false);
+                    self.remove_castling_right(Sides::BLACK, true);
+                }
+            },
+            5 => self.set(&mov.to, Pieces::QUEEN, p.1), // if promotion, set new piece on target instead of old one
             6 => self.set(&mov.to, Pieces::ROOK, p.1),
             7 => self.set(&mov.to, Pieces::BISHOP, p.1),
             8 => self.set(&mov.to, Pieces::KNIGHT, p.1),
-            _ => self.set(&mov.to, p.0, p.1),
+            _ => (),
         } 
 
         if mov.flag == 1 { // move is en passant
@@ -255,10 +366,58 @@ impl Board {
             self.set_en_passant(mov.to.col as u16);
         }
 
+        if p.0 == Pieces::KING {
+            if side_to_play == Sides::WHITE && (self.castle_white_short() || self.castle_white_long()) {
+                self.remove_castling_right(Sides::WHITE, false);
+                self.remove_castling_right(Sides::WHITE, true);
+            } else if side_to_play == Sides::BLACK && (self.castle_black_short() || self.castle_black_long()) {
+                self.remove_castling_right(Sides::BLACK, false);
+                self.remove_castling_right(Sides::BLACK, true);
+            }
+        } else if p.0 == Pieces::ROOK {
+            if side_to_play == Sides::WHITE {
+                if mov.from.col == 0 && mov.from.row == 0 {
+                    self.remove_castling_right(Sides::WHITE, true);
+                } else if mov.from.col == 7 && mov.from.row == 0 {
+                    self.remove_castling_right(Sides::WHITE, false);
+                }
+            } else {
+                if mov.from.col == 0 && mov.from.row == 7 {
+                    self.remove_castling_right(Sides::BLACK, true);
+                } else if mov.from.col == 7 && mov.from.row == 7 {
+                    self.remove_castling_right(Sides::BLACK, false);
+                }
+            }
+        }
+
         if (p.0 != Pieces::PAWN) && !move_is_capture {
             self.half_moves += 1;
+            
+            if self.half_moves >= 100 {
+                self.game_state = GameState::DRAW;
+            }
+
+            let hash = self.compute_zobrist_hash();
+            let mut repetition_count = 0;
+            for i in 0..self.half_moves {
+                if self.zobrist_history[i as usize] == hash {
+                    repetition_count += 1;
+                    if repetition_count == 2 {
+                        self.game_state = GameState::DRAW;
+                        break;
+                    }
+                }
+            }
+            self.zobrist_history[self.half_moves as usize] = hash;
         } else {
-            self.half_moves = 1;
+            self.half_moves = 0;
+            self.zobrist_history = [0; 101];
+            if mov.flag == 2 { // if the new position includes a possible en passant, dont add it
+                               // to the zobrist history
+                self.zobrist_history[0] = 0;
+            } else {
+                self.zobrist_history[0] = self.compute_zobrist_hash();
+            }
         }
 
         let mut next_color_to_move = Sides::BLACK;
@@ -272,6 +431,23 @@ impl Board {
         }
 
         self.generate_total_bitboard(side_to_play);
+        if move_is_capture {
+            self.generate_total_bitboard(next_color_to_move);
+        }
         self.generate_check_mask(side_to_play);
+
+        self.generate_move_list();
+
+        if self.move_list.len() == 0 {
+            if self.king_attacker_count == 0 {
+                self.game_state = GameState::DRAW;
+            } else {
+                self.game_state = match next_color_to_move {
+                    Sides::WHITE => GameState::BLACK_WINS,
+                    Sides::BLACK => GameState::WHITE_WINS,
+                    _ => GameState::WHITE_WINS,
+                }
+            }
+        }
     }
 }

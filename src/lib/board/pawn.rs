@@ -36,8 +36,8 @@ pub fn get_all_moves_pseudolegal(board: &Board, pos: &Position, moves: &mut Vec<
     // move two forward
     let p = Position::new(pos.col, ((pos.row as i8)+modi*2) as u8);
     let is_in_start_pos = (modi == 1 && pos.row == 1) || (modi == -1 && pos.row == 6);
-    if is_in_start_pos && (board.king_attacker_count != 1 || attacker_and_block_mask & BitBoard(1 << (p.col+p.row*8)) != BitBoard(0) &&
-        (!is_pinned || board.pinned_pieces_move_mask & BitBoard(1 << (p.col+p.row*8)) != BitBoard(0))) {
+    if is_in_start_pos && (board.king_attacker_count != 1 || attacker_and_block_mask & BitBoard(1 << (p.col+p.row*8)) != BitBoard(0)) &&
+        (!is_pinned || board.pinned_pieces_move_mask & BitBoard(1 << (p.col+p.row*8)) != BitBoard(0)) {
 
         if board.get(&p).0 == Pieces::EMPTY &&
             board.get(&Position::new(pos.col, ((pos.row as i8)+modi) as u8)).0 == Pieces::EMPTY {

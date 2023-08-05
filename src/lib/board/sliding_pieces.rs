@@ -46,7 +46,13 @@ pub fn get_all_moves_sliding_pseudolegal(board: &Board, pos: &Position, moves: &
             let target_square = square_idx as i8 + dir * (n+1);
             if board.king_attacker_count == 1 &&
                 (board.king_attacker_mask | board.king_attacker_block_mask) & BitBoard(1 << target_square) == BitBoard(0) {
-                continue;
+
+                let target_piece = board.get_by_idx(target_square as u8);
+                if target_piece.0 != Pieces::EMPTY {
+                    break;
+                } else {
+                    continue;
+                }
             }
 
             if is_pinned && board.pinned_pieces_move_mask & BitBoard(1 << target_square) == BitBoard(0) {

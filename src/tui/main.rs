@@ -2,17 +2,32 @@ use colored::Colorize;
 use std::io;
 
 use smogfish::board::{Board, Position, Move};
-use smogfish::board::helper::{Sides, Pieces};
+use smogfish::board::helper::{Sides, Pieces, GameState};
 
 pub fn main() {
     let mut board_buffer: [String; 8] = ["".to_string(), "".to_string(), "".to_string(), "".to_string(), "".to_string(), "".to_string(), "".to_string(), "".to_string()];
     let mut cursor_pos: Position = Position::new(3, 1);
      
-    // let mut b = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-    let mut b = Board::new("8/1P5P/8/8/7k/K7/4p3/8 w - - 0 1");
+    let mut b = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    // let mut b = Board::new("R1K5/PP3q1r/2B5/8/8/5Q2/pp6/r5k1 b - - 0 1");
     // let mut b = Board::new("2k2Q2/8/8/8/1Q6/8/8/2K5 w - - 0 1");
 
     loop {
+        if b.game_state != GameState::PLAYING {
+            if b.game_state == GameState::DRAW {
+                println!("The game ended by draw!");
+                break;
+            }
+            if b.game_state == GameState::WHITE_WINS {
+                println!("White wins!");
+                break;
+            }
+            if b.game_state == GameState::BLACK_WINS {
+                println!("Black wins!");
+                break;
+            }
+        }
+
         fill_board_buffer(&b, &mut board_buffer);
 
         let mut possible_moves: Vec<Move> = vec![];

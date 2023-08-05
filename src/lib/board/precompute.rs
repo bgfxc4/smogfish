@@ -1,4 +1,5 @@
 use std::cmp;
+use rand::Rng;
 use crate::board::helper::Sides;
 
 use super::BitBoard;
@@ -9,6 +10,10 @@ lazy_static! {
         DIRECTION_OFFSETS: [8, -8, -1, 1, 7, -7, 9, -9],
         KNIGHT_ATTACKS: precompute_knight_attacks(),
         KING_PAWN_ATTACKS: precompute_king_pawn_attacks(),
+        KING_CASTLE_CHECKS: precompute_king_castle_checks(),
+        ZOBRIST_HASH_TABLE: init_zobrist_hash_table(),
+        // black to move, white short castle, white long castle, black short castle, black long castle
+        ZOBRIST_SPECIAL_KEYS: init_zobrist_special_keys(),
     };
 }
 #[allow(non_snake_case)]
@@ -17,6 +22,9 @@ pub struct PrecomputedLookups {
     pub DIRECTION_OFFSETS: [i8; 8],
     pub KNIGHT_ATTACKS: [BitBoard; 64],
     pub KING_PAWN_ATTACKS: [[BitBoard; 64]; 2],
+    pub KING_CASTLE_CHECKS: [[BitBoard; 2]; 2],
+    pub ZOBRIST_HASH_TABLE: [[u64; 12]; 64],
+    pub ZOBRIST_SPECIAL_KEYS: [u64; 5],
 }
 
 fn precompute_num_squares_to_edge() -> [[i8; 8]; 64] {
@@ -92,8 +100,41 @@ fn precompute_king_pawn_attacks() -> [[BitBoard; 64]; 2] {
                 }
                 ret[p.2 as usize][square_idx as usize] |= BitBoard(1 << (p.0*8 + p.1));
             }
-        } 
-    } 
+        }
+    }
     println!("Done!");
     ret
+}
+
+fn precompute_king_castle_checks() -> [[BitBoard; 2]; 2] {
+    [
+        [
+            BitBoard(96),
+            BitBoard(12),
+        ],
+        [
+            BitBoard(6917529027641081856),
+            BitBoard(864691128455135232),
+        ],
+    ]
+}
+
+fn init_zobrist_hash_table() -> [[u64; 12]; 64] {
+    println!("Precomputing zobrist table...");
+    let mut rng = rand::thread_rng();
+    let mut ret = [[0; 12]; 64];
+    for i in 0..64 {
+        for p in 0..12 {
+            ret[i][p] = rng.gen();
+        }
+    }
+    println!("Done!");
+    ret
+}
+
+fn init_zobrist_special_keys() -> [u64; 5] {
+    println!("Precomputing special keys...");
+    let mut rng = rand::thread_rng();
+    println!("Done!");
+    [rng.gen(), rng.gen(), rng.gen(), rng.gen(), rng.gen()]
 }

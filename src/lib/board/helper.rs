@@ -17,6 +17,14 @@ impl Pieces {
     pub const EMPTY: u8 = 6;
 }
 
+pub struct GameState;
+impl GameState {
+    pub const PLAYING: u8 = 0;
+    pub const WHITE_WINS: u8 = 1;
+    pub const BLACK_WINS: u8 = 2;
+    pub const DRAW: u8 = 3;
+}
+
 pub fn load_board_from_fen(board: &mut Board, fen: &str) -> Result<(), String> {
     board.flags = 0;
     board.pieces = [[BitBoard(0); 6]; 2];
@@ -107,6 +115,8 @@ pub fn load_board_from_fen(board: &mut Board, fen: &str) -> Result<(), String> {
     board.generate_total_bitboard(Sides::WHITE);
     board.generate_total_bitboard(Sides::BLACK);
     board.generate_check_mask(if board.is_white_to_play() { Sides::BLACK } else { Sides::WHITE });
+
+    board.generate_move_list();
 
     return Ok(());
 }

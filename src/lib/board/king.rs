@@ -5,6 +5,7 @@ use super::{Position, Board, Move};
 
 pub fn get_all_moves_pseudolegal(board: &Board, pos: &Position, moves: &mut Vec<Move>) {
     let square_idx = (pos.row*8+pos.col) as i8;
+    let white_to_play = board.is_white_to_play();
 
     for dir_idx in 0 .. 8 {
         if PRECOMPUTED_LOOKUPS.NUM_SQUARES_TO_EDGE[square_idx as usize][dir_idx] == 0 {
@@ -20,7 +21,7 @@ pub fn get_all_moves_pseudolegal(board: &Board, pos: &Position, moves: &mut Vec<
         let target_piece = board.get_by_idx(target_square as u8);
 
         // target square is not empty and there is a friendly piece => stop search in this direction
-        if (target_piece.0 != Pieces::EMPTY) && ((target_piece.1 == Sides::WHITE) == board.is_white_to_play()) {
+        if (target_piece.0 != Pieces::EMPTY) && ((target_piece.1 == Sides::WHITE) == white_to_play) {
             continue;
         }
 
@@ -30,6 +31,29 @@ pub fn get_all_moves_pseudolegal(board: &Board, pos: &Position, moves: &mut Vec<
         }
 
         moves.push(Move::new(pos, &Position { row: (target_square/8) as u8, col: (target_square % 8) as u8 }));
+    }
+
+    let total_castle_mask = board.white_total | board.black_total | board.check_mask;
+    if white_to_play {
+        if board.castle_white_short() &&
+            total_castle_mask & PRECOMPUTED_LOOKUPS.KING_CASTLE_CHECKS[Sides::WHITE as usize][0] == BitBoard(0) {
+            moves.push(Move::new_with_flags(pos, &Position { col: 6, row: 0 }, 3));
+        }
+
+        if board.castle_white_long() &&
+            total_castle_mask & PRECOMPUTED_LOOKUPS.KING_CASTLE_CHECKS[Sides::WHITE as usize][1] == BitBoard(0) {
+            moves.push(Move::new_with_flags(pos, &Position { col: 2, row: 0 }, 4));
+        }
+    } else {
+        if board.castle_black_short() &&
+            total_castle_mask & PRECOMPUTED_LOOKUPS.KING_CASTLE_CHECKS[Sides::BLACK as usize][0] == BitBoard(0) {
+            moves.push(Move::new_with_flags(pos, &Position { col: 6, row: 7 }, 3));
+        }
+
+        if board.castle_black_long() &&
+            total_castle_mask & PRECOMPUTED_LOOKUPS.KING_CASTLE_CHECKS[Sides::BLACK as usize][1] == BitBoard(0) {
+            moves.push(Move::new_with_flags(pos, &Position { col: 2, row: 7 }, 4));
+        }
     }
 }
 
