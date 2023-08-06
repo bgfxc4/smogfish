@@ -73,12 +73,12 @@ impl Position {
     }
 }
 
-pub struct GameState;
-impl GameState {
-    pub const PLAYING: u8 = 0;
-    pub const WHITE_WINS: u8 = 1;
-    pub const BLACK_WINS: u8 = 2;
-    pub const DRAW: u8 = 3;
+#[derive(Debug, Clone, Copy)]
+pub enum GameState {
+    Playing,
+    WhiteWins,
+    BlackWins,
+    Draw,
 }
 
 pub fn load_board_from_fen(board: &mut Board, fen: &str) -> Result<(), String> {

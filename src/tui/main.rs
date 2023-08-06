@@ -13,19 +13,20 @@ pub fn main() {
     // let mut b = Board::new("2k2Q2/8/8/8/1Q6/8/8/2K5 w - - 0 1");
 
     loop {
-        if b.game_state != GameState::PLAYING {
-            if b.game_state == GameState::DRAW {
+        match b.game_state {
+            GameState::Draw => {
                 println!("The game ended by draw!");
                 break;
             }
-            if b.game_state == GameState::WHITE_WINS {
-                println!("White wins!");
-                break;
-            }
-            if b.game_state == GameState::BLACK_WINS {
+            GameState::BlackWins => {
                 println!("Black wins!");
                 break;
             }
+            GameState::WhiteWins => {
+                println!("White wins!");
+                break;
+            }
+            _ => (),
         }
 
         fill_board_buffer(&b, &mut board_buffer);

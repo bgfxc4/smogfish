@@ -40,7 +40,7 @@ impl Move {
 
 #[derive(Clone)]
 pub struct Board {
-    pub game_state: u8,
+    pub game_state: GameState,
     pieces: PieceBoards,
     white_total: BitBoard,
     black_total: BitBoard,
@@ -77,7 +77,7 @@ impl Board {
         lazy_static::initialize(&precompute::PRECOMPUTED_LOOKUPS);
         let mut b: Self = Board {
             pieces: Default::default(),
-            game_state: GameState::PLAYING,
+            game_state: GameState::Playing,
             white_total: BitBoard(0),
             black_total: BitBoard(0),
             check_mask: BitBoard(0),
@@ -425,7 +425,7 @@ impl Board {
             self.half_moves += 1;
 
             if self.half_moves >= 100 {
-                self.game_state = GameState::DRAW;
+                self.game_state = GameState::Draw;
             }
 
             let hash = self.compute_zobrist_hash();
@@ -434,7 +434,7 @@ impl Board {
                 if self.zobrist_history[i as usize] == hash {
                     repetition_count += 1;
                     if repetition_count == 2 {
-                        self.game_state = GameState::DRAW;
+                        self.game_state = GameState::Draw;
                         break;
                     }
                 }
@@ -473,11 +473,11 @@ impl Board {
 
         if self.move_list.len() == 0 {
             if self.king_attacker_count == 0 {
-                self.game_state = GameState::DRAW;
+                self.game_state = GameState::Draw;
             } else {
                 self.game_state = match next_color_to_move {
-                    Color::White => GameState::BLACK_WINS,
-                    Color::Black => GameState::WHITE_WINS,
+                    Color::White => GameState::BlackWins,
+                    Color::Black => GameState::WhiteWins,
                 }
             }
         }
