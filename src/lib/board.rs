@@ -19,7 +19,15 @@ pub type Position = u8;
 pub struct Move {
     pub from: Position,
     pub to: Position,
-    pub flag: u8, // 1 -> is_en_passant, 2 -> triggers_en_passant, 3 -> castle_short, 4 -> castle_long, 5 -> promote queen, 6 -> promote rook, 7 -> promote bishop, 8 -> promote knight
+    /// 1 -> is_en_passant
+    /// 2 -> triggers_en_passant
+    /// 3 -> castle_short
+    /// 4 -> castle_long
+    /// 5 -> promote queen
+    /// 6 -> promote rook
+    /// 7 -> promote bishop
+    /// 8 -> promote knight
+    pub flag: u8,
 }
 
 impl Move {
@@ -38,25 +46,31 @@ pub struct Board {
     pieces: PieceBoards,
     white_total: BitBoard,
     black_total: BitBoard,
-    check_mask: BitBoard, // marks every square, where a piece of the player, who just made a move
-    // is attacking. This bitboard ignores the king of the player whos turn
-    // it is
+    /// marks every square, where a piece of the player, who just made a move
+    /// is attacking. This bitboard ignores the king of the player whos turn
+    /// it is
+    check_mask: BitBoard,
     king_attacker_count: u8,
     king_attacker_mask: BitBoard,
     king_attacker_block_mask: BitBoard,
     pinned_pieces: BitBoard,
     pinned_pieces_move_mask: BitBoard,
-    en_passant_pinned_piece: u8, // stores, if a pawn can not take en passant. This can only be one
-    // pawn at once and the tile index of it is stored here.
-    // 65 -> empty
-    flags: u16, // side_to_play,
-    // white_castle_short, white_castle_long, black_castle_short, black_castle_long
-    // (all 1 bit)
-    // en_passant_pos (4 bit number, 0-7, side is clear by active color, 15 (1111b) to
-    // signal no en passant)
-    half_moves: u8, // for fifty move rule
+    /// stores, if a pawn can not take en passant. This can only be one
+    /// pawn at once and the tile index of it is stored here.
+    /// 65 -> empty
+    en_passant_pinned_piece: u8,
+    /// 1 -> side_to_play,
+    /// 2 -> white_castle_short
+    /// 3 -> white_castle_long
+    /// 4 -> black_castle_short
+    /// 5 -> black_castle_long
+    /// 5..9 -> en_passant_pos (4 bit number, 0-7, side is clear by active color, 15 (1111b) to signal no en passant)
+    flags: u16,
+    /// for fifty move rule
+    half_moves: u8,
     full_moves: u16,
-    zobrist_history: [u64; 101], // for threefold repetition, indexed by halfmoves
+    /// for threefold repetition, indexed by halfmoves
+    zobrist_history: [u64; 101],
     pub move_list: Vec<Move>,
 }
 
@@ -117,9 +131,9 @@ impl Board {
         self.pieces[(color, piece)] & BitBoard(1 << idx) != BitBoard(0)
     }
 
+    /// dont use in engine, only for showing
+    /// the board, not really efficient
     pub fn get_by_idx(&self, idx: Position) -> (Piece, Color) {
-        // dont use in engine, only for showing
-        // the board, not really efficient
         if self.white_total & BitBoard(1 << idx) != BitBoard(0) {
             for p in Piece::ALL_NONEMPTY {
                 if self.pieces[(Color::White, p)] & BitBoard(1 << idx) != BitBoard(0) {
