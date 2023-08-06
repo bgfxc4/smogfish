@@ -1,0 +1,8 @@
+[package]
+name = "smogfish-tui"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+smogfish = { path = "../engine" }
+colored = "2.0.1"
