@@ -352,7 +352,7 @@ impl Board {
 
         if mov.flag == 1 { // move is en passant
             // TODO: better and more efficient board.clear_field to avoid use of board.get here
-            self.clear_bit((mov.to%8)+(mov.from/8)*8, self.get_by_idx(mov.to).0, oponent_side);
+            self.clear_bit((mov.to%8)+(mov.from/8)*8, Pieces::PAWN, oponent_side);
         } else if mov.flag == 2 { // move triggers en passant
             self.set_en_passant((mov.to%8) as u16);
         }
