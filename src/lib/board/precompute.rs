@@ -1,21 +1,43 @@
 use super::BitBoard;
 use crate::board::helper::Color;
-use rand::Rng;
-use std::{cmp, sync::LazyLock};
+use rand::random;
+use std::sync::LazyLock;
 
 pub const DIRECTION_OFFSETS: [i8; 8] = [8, -8, -1, 1, 7, -7, 9, -9];
-pub static NUM_SQUARES_TO_EDGE: LazyLock<[[i8; 8]; 64]> = LazyLock::new(num_squares_to_edge);
-pub static KNIGHT_ATTACKS: LazyLock<[BitBoard; 64]> = LazyLock::new(knight_attacks);
-pub static KING_PAWN_ATTACKS: LazyLock<[[BitBoard; 64]; 2]> = LazyLock::new(king_pawn_attacks);
-pub static KING_CASTLE_CHECKS: LazyLock<[[BitBoard; 2]; 2]> = LazyLock::new(king_castle_checks);
+pub static NUM_SQUARES_TO_EDGE: [[i8; 8]; 64] = num_squares_to_edge();
+pub static KNIGHT_ATTACKS: [BitBoard; 64] = knight_attacks();
+pub static KING_PAWN_ATTACKS: [[BitBoard; 64]; 2] = king_pawn_attacks();
+pub static KING_CASTLE_CHECKS: [[BitBoard; 2]; 2] = king_castle_checks();
 pub static ZOBRIST_HASH_TABLE: LazyLock<[[u64; 12]; 64]> = LazyLock::new(zobrist_hash_table);
 pub static ZOBRIST_SPECIAL_KEYS: LazyLock<[u64; 5]> = LazyLock::new(zobrist_special_keys);
 
-fn num_squares_to_edge() -> [[i8; 8]; 64] {
-    println!("Precomputing num squares to edge...");
+/// stupid for-range implemention because const_trait_impl and iter are not usuable yet.
+macro_rules! const_for {
+    (for $i:ident in $from:literal..$to:literal { $($body:tt)* }) => {{
+        let mut $i = $from;
+        loop {
+            if $i >= $to { break; }
+            { $($body)* }
+            $i += 1
+        }
+    }};
+    (for $i:ident in [$($expr:expr),*] { $body:tt }) => {{
+        { $({let $i = $expr; $body })* }
+    }};
+
+}
+const fn min(a: i8, b: i8) -> i8 {
+    if a < b {
+        a
+    } else {
+        b
+    }
+}
+
+const fn num_squares_to_edge() -> [[i8; 8]; 64] {
     let mut ret = [[0 as i8; 8]; 64];
-    for col in 0..8 {
-        for row in 0..8 {
+    const_for!(for col in 0..8 {
+        const_for!(for row in 0..8 {
             let up: i8 = 7 - row;
             let down: i8 = row;
             let left: i8 = col;
@@ -25,25 +47,22 @@ fn num_squares_to_edge() -> [[i8; 8]; 64] {
                 down,
                 left,
                 right,
-                cmp::min(up, left),
-                cmp::min(down, right),
-                cmp::min(up, right),
-                cmp::min(down, left),
+                min(up, left),
+                min(down, right),
+                min(up, right),
+                min(down, left),
             ]
-        }
-    }
-    println!("Done!");
+        })
+    });
     ret
 }
 
-fn knight_attacks() -> [BitBoard; 64] {
-    println!("Precomputing knight attacks...");
+const fn knight_attacks() -> [BitBoard; 64] {
     let mut ret = [BitBoard(0); 64];
-
-    for row in 0..8 as i8 {
-        for col in 0..8 as i8 {
+    const_for!(for row in 0..8 {
+        const_for!(for col in 0..8 {
             let square_idx = row * 8 + col;
-            let possible_attacks = [
+            const_for!(for p in [
                 (row + 2, col + 1),
                 (row + 2, col - 1),
                 (row - 2, col + 1),
@@ -51,46 +70,42 @@ fn knight_attacks() -> [BitBoard; 64] {
                 (row + 1, col + 2),
                 (row + 1, col - 2),
                 (row - 1, col + 2),
-                (row - 1, col - 2),
-            ];
-            for p in possible_attacks {
-                if p.0 > 7 || p.0 < 0 || p.1 > 7 || p.1 < 0 {
-                    continue;
+                (row - 1, col - 2)
+            ] {
+                {
+                    if p.0 <= 7 && p.0 >= 0 && p.1 <= 7 && p.1 >= 0 {
+                        ret[square_idx as usize].0 |= 1 << (p.0 * 8 + p.1);
+                    }
                 }
-                ret[square_idx as usize] |= BitBoard(1 << (p.0 * 8 + p.1));
-            }
-        }
-    }
-    println!("Done!");
+            })
+        })
+    });
     ret
 }
 
-fn king_pawn_attacks() -> [[BitBoard; 64]; 2] {
-    println!("Precomputing king pawn attacks...");
+const fn king_pawn_attacks() -> [[BitBoard; 64]; 2] {
     let mut ret = [[BitBoard(0); 64]; 2];
-
-    for row in 0..8 as i8 {
-        for col in 0..8 as i8 {
+    const_for!(for row in 0..8 {
+        const_for!(for col in 0..8 {
             let square_idx = row * 8 + col;
-            let possible_attacks = [
+            const_for!(for p in [
                 (row + 1, col + 1, Color::White),
                 (row + 1, col - 1, Color::White),
                 (row - 1, col + 1, Color::Black),
-                (row - 1, col - 1, Color::Black),
-            ];
-            for p in possible_attacks {
-                if p.0 > 7 || p.0 < 0 || p.1 > 7 || p.1 < 0 {
-                    continue;
+                (row - 1, col - 1, Color::Black)
+            ] {
+                {
+                    if p.0 >= 7 && p.0 <= 0 && p.1 >= 7 && p.1 <= 0 {
+                        ret[p.2 as usize][square_idx as usize].0 |= 1 << (p.0 * 8 + p.1);
+                    }
                 }
-                ret[p.2 as usize][square_idx as usize] |= BitBoard(1 << (p.0 * 8 + p.1));
-            }
-        }
-    }
-    println!("Done!");
+            })
+        })
+    });
     ret
 }
 
-fn king_castle_checks() -> [[BitBoard; 2]; 2] {
+const fn king_castle_checks() -> [[BitBoard; 2]; 2] {
     [
         [BitBoard(96), BitBoard(12)],
         [BitBoard(6917529027641081856), BitBoard(864691128455135232)],
@@ -98,21 +113,15 @@ fn king_castle_checks() -> [[BitBoard; 2]; 2] {
 }
 
 fn zobrist_hash_table() -> [[u64; 12]; 64] {
-    println!("Precomputing zobrist table...");
-    let mut rng = rand::thread_rng();
     let mut ret = [[0; 12]; 64];
     for i in 0..64 {
         for p in 0..12 {
-            ret[i][p] = rng.gen();
+            ret[i][p] = random();
         }
     }
-    println!("Done!");
     ret
 }
 
 fn zobrist_special_keys() -> [u64; 5] {
-    println!("Precomputing special keys...");
-    let mut rng = rand::thread_rng();
-    println!("Done!");
-    [rng.gen(), rng.gen(), rng.gen(), rng.gen(), rng.gen()]
+    [random(), random(), random(), random(), random()]
 }
