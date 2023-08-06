@@ -8,7 +8,7 @@ pub mod sliding_pieces;
 
 use self::{
     helper::{Color, GameState, PieceBoards, Position},
-    precompute::PRECOMPUTED_LOOKUPS,
+    precompute::{ZOBRIST_HASH_TABLE, ZOBRIST_SPECIAL_KEYS},
 };
 use bitboard::BitBoard;
 use helper::Piece;
@@ -225,26 +225,26 @@ impl Board {
         let mut hash_value = 0;
         for p in Piece::ALL_NONEMPTY {
             for i in self.pieces[(Color::White, p)] {
-                hash_value ^= PRECOMPUTED_LOOKUPS.ZOBRIST_HASH_TABLE[i.0 as usize][p as usize];
+                hash_value ^= ZOBRIST_HASH_TABLE[i.0 as usize][p as usize];
             }
             for i in self.pieces[(Color::Black, p)] {
-                hash_value ^= PRECOMPUTED_LOOKUPS.ZOBRIST_HASH_TABLE[i.0 as usize][p as usize + 6];
+                hash_value ^= ZOBRIST_HASH_TABLE[i.0 as usize][p as usize + 6];
             }
         }
         if self.current_player() == Color::Black {
-            hash_value ^= PRECOMPUTED_LOOKUPS.ZOBRIST_SPECIAL_KEYS[0];
+            hash_value ^= ZOBRIST_SPECIAL_KEYS[0];
         }
         if self.castle_white_short() {
-            hash_value ^= PRECOMPUTED_LOOKUPS.ZOBRIST_SPECIAL_KEYS[1];
+            hash_value ^= ZOBRIST_SPECIAL_KEYS[1];
         }
         if self.castle_white_long() {
-            hash_value ^= PRECOMPUTED_LOOKUPS.ZOBRIST_SPECIAL_KEYS[2];
+            hash_value ^= ZOBRIST_SPECIAL_KEYS[2];
         }
         if self.castle_black_short() {
-            hash_value ^= PRECOMPUTED_LOOKUPS.ZOBRIST_SPECIAL_KEYS[3];
+            hash_value ^= ZOBRIST_SPECIAL_KEYS[3];
         }
         if self.castle_black_long() {
-            hash_value ^= PRECOMPUTED_LOOKUPS.ZOBRIST_SPECIAL_KEYS[4];
+            hash_value ^= ZOBRIST_SPECIAL_KEYS[4];
         }
 
         hash_value

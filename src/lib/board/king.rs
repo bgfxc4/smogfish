@@ -1,16 +1,18 @@
 use super::bitboard::BitBoard;
 use super::helper::{Color, Piece};
-use super::precompute::PRECOMPUTED_LOOKUPS;
+use super::precompute::{
+    DIRECTION_OFFSETS, KING_CASTLE_CHECKS, KING_PAWN_ATTACKS, KNIGHT_ATTACKS, NUM_SQUARES_TO_EDGE,
+};
 use super::{Board, Move, Position};
 
 pub fn get_all_moves_pseudolegal(board: &mut Board, pos: Position) {
     let friendly_side = board.current_player();
 
     for dir_idx in 0..8 {
-        if PRECOMPUTED_LOOKUPS.NUM_SQUARES_TO_EDGE[pos.0 as usize][dir_idx] == 0 {
+        if NUM_SQUARES_TO_EDGE[pos.0 as usize][dir_idx] == 0 {
             continue;
         }
-        let dir = PRECOMPUTED_LOOKUPS.DIRECTION_OFFSETS[dir_idx as usize] as i8;
+        let dir = DIRECTION_OFFSETS[dir_idx as usize] as i8;
 
         if (pos.0 as i8 + dir) >= 64 || (pos.0 as i8 + dir) < 0 {
             continue;
@@ -39,9 +41,7 @@ pub fn get_all_moves_pseudolegal(board: &mut Board, pos: Position) {
     match friendly_side {
         Color::White => {
             if board.castle_white_short()
-                && total_castle_mask
-                    & PRECOMPUTED_LOOKUPS.KING_CASTLE_CHECKS[Color::White as usize][0]
-                    == BitBoard(0)
+                && total_castle_mask & KING_CASTLE_CHECKS[Color::White as usize][0] == BitBoard(0)
             {
                 board
                     .move_list
@@ -49,9 +49,7 @@ pub fn get_all_moves_pseudolegal(board: &mut Board, pos: Position) {
             }
 
             if board.castle_white_long()
-                && total_castle_mask
-                    & PRECOMPUTED_LOOKUPS.KING_CASTLE_CHECKS[Color::White as usize][1]
-                    == BitBoard(0)
+                && total_castle_mask & KING_CASTLE_CHECKS[Color::White as usize][1] == BitBoard(0)
             {
                 board
                     .move_list
@@ -60,9 +58,7 @@ pub fn get_all_moves_pseudolegal(board: &mut Board, pos: Position) {
         }
         Color::Black => {
             if board.castle_black_short()
-                && total_castle_mask
-                    & PRECOMPUTED_LOOKUPS.KING_CASTLE_CHECKS[Color::Black as usize][0]
-                    == BitBoard(0)
+                && total_castle_mask & KING_CASTLE_CHECKS[Color::Black as usize][0] == BitBoard(0)
             {
                 board
                     .move_list
@@ -70,9 +66,7 @@ pub fn get_all_moves_pseudolegal(board: &mut Board, pos: Position) {
             }
 
             if board.castle_black_long()
-                && total_castle_mask
-                    & PRECOMPUTED_LOOKUPS.KING_CASTLE_CHECKS[Color::Black as usize][1]
-                    == BitBoard(0)
+                && total_castle_mask & KING_CASTLE_CHECKS[Color::Black as usize][1] == BitBoard(0)
             {
                 board
                     .move_list
@@ -86,7 +80,7 @@ pub fn get_all_attacks(_board: &Board, pos: Position) -> BitBoard {
     let mut ret = BitBoard(0);
 
     for dir_idx in 0..8 {
-        let dir = PRECOMPUTED_LOOKUPS.DIRECTION_OFFSETS[dir_idx as usize] as i8;
+        let dir = DIRECTION_OFFSETS[dir_idx as usize] as i8;
 
         if (pos.0 as i8 + dir) >= 64 || (pos.0 as i8 + dir) < 0 {
             continue;
@@ -103,19 +97,19 @@ pub fn calc_king_attacker_masks(board: &mut Board, pos: Position) {
     let friendly_side = board.current_player();
     let enemy_side = !friendly_side;
 
-    let enemy_knight_attackers = board.pieces[(enemy_side, Piece::Knight)]
-        & PRECOMPUTED_LOOKUPS.KNIGHT_ATTACKS[pos.0 as usize];
+    let enemy_knight_attackers =
+        board.pieces[(enemy_side, Piece::Knight)] & KNIGHT_ATTACKS[pos.0 as usize];
 
     let enemy_pawn_attackers = board.pieces[(enemy_side, Piece::Pawn)]
-        & PRECOMPUTED_LOOKUPS.KING_PAWN_ATTACKS[friendly_side as usize][pos.0 as usize];
+        & KING_PAWN_ATTACKS[friendly_side as usize][pos.0 as usize];
 
     let mut enemy_sliding_piece_attackers = BitBoard(0);
     board.king_attacker_block_mask = BitBoard(0);
     for dir_idx in 0..8 {
-        let dir = PRECOMPUTED_LOOKUPS.DIRECTION_OFFSETS[dir_idx as usize] as i8;
+        let dir = DIRECTION_OFFSETS[dir_idx as usize] as i8;
 
         let mut temp_block_mask = BitBoard(0);
-        for n in 0..PRECOMPUTED_LOOKUPS.NUM_SQUARES_TO_EDGE[pos.0 as usize][dir_idx] {
+        for n in 0..NUM_SQUARES_TO_EDGE[pos.0 as usize][dir_idx] {
             let target_square = Position((pos.0 as i8 + dir * (n + 1)) as u8);
             let target_empty = board.tile_is_empty(target_square);
 
@@ -159,12 +153,12 @@ pub fn calc_pinned_pieces(board: &mut Board, pos: Position) {
     board.en_passant_pinned_piece = 65;
 
     for dir_idx in 0..8 {
-        let dir = PRECOMPUTED_LOOKUPS.DIRECTION_OFFSETS[dir_idx as usize] as i8;
+        let dir = DIRECTION_OFFSETS[dir_idx as usize] as i8;
 
         let mut found_pinned_piece_idx = 65; // 65 => not found yet
         let mut found_pinned_piece_idx_en_passant = 65;
         let mut temp_pinned_move_mask = BitBoard(0);
-        for n in 0..PRECOMPUTED_LOOKUPS.NUM_SQUARES_TO_EDGE[pos.0 as usize][dir_idx] {
+        for n in 0..NUM_SQUARES_TO_EDGE[pos.0 as usize][dir_idx] {
             let target_square = Position((pos.0 as i8 + dir * (n + 1)) as u8);
             let target_piece_is_pawn =
                 board.piece_is_type(target_square, Color::White, Piece::Pawn)

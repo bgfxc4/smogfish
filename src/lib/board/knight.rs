@@ -1,6 +1,6 @@
 use super::bitboard::BitBoard;
 use super::helper::Color;
-use super::precompute::PRECOMPUTED_LOOKUPS;
+use super::precompute::KNIGHT_ATTACKS;
 use super::{Board, Move, Position};
 
 pub fn get_all_moves(board: &mut Board, pos: Position) {
@@ -13,7 +13,7 @@ pub fn get_all_moves(board: &mut Board, pos: Position) {
         return;
     }
 
-    let mut attack_mask = PRECOMPUTED_LOOKUPS.KNIGHT_ATTACKS[pos.0 as usize];
+    let mut attack_mask = KNIGHT_ATTACKS[pos.0 as usize];
 
     match board.current_player() {
         Color::White => attack_mask &= !board.white_total,
@@ -30,6 +30,6 @@ pub fn get_all_moves(board: &mut Board, pos: Position) {
 }
 
 pub fn get_all_attacks(_board: &Board, pos: Position) -> BitBoard {
-    let attack_mask = PRECOMPUTED_LOOKUPS.KNIGHT_ATTACKS[pos.0 as usize];
+    let attack_mask = KNIGHT_ATTACKS[pos.0 as usize];
     attack_mask
 }

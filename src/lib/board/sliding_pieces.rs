@@ -1,6 +1,6 @@
 use super::bitboard::BitBoard;
 use super::helper::{Color, Piece};
-use super::precompute::PRECOMPUTED_LOOKUPS;
+use super::precompute::{DIRECTION_OFFSETS, NUM_SQUARES_TO_EDGE};
 use super::{Board, Move, Position};
 
 pub fn get_all_moves_bishop_pseudolegal(board: &mut Board, pos: Position) {
@@ -46,8 +46,8 @@ pub fn get_all_moves_sliding_pseudolegal(
     let friendly_side = board.current_player();
 
     for dir_idx in start_dir..end_dir {
-        let dir = PRECOMPUTED_LOOKUPS.DIRECTION_OFFSETS[dir_idx as usize] as i8;
-        for n in 0..PRECOMPUTED_LOOKUPS.NUM_SQUARES_TO_EDGE[pos.0 as usize][dir_idx] {
+        let dir = DIRECTION_OFFSETS[dir_idx as usize] as i8;
+        for n in 0..NUM_SQUARES_TO_EDGE[pos.0 as usize][dir_idx] {
             let target_square = Position((pos.0 as i8 + dir * (n + 1)) as u8);
             if board.king_attacker_count == 1
                 && !(board.king_attacker_mask | board.king_attacker_block_mask).has(target_square)
@@ -90,8 +90,8 @@ pub fn get_all_attacks_sliding(
     let mut ret = BitBoard(0);
 
     for dir_idx in start_dir..end_dir {
-        let dir = PRECOMPUTED_LOOKUPS.DIRECTION_OFFSETS[dir_idx as usize] as i8;
-        for n in 0..PRECOMPUTED_LOOKUPS.NUM_SQUARES_TO_EDGE[pos.0 as usize][dir_idx] {
+        let dir = DIRECTION_OFFSETS[dir_idx as usize] as i8;
+        for n in 0..NUM_SQUARES_TO_EDGE[pos.0 as usize][dir_idx] {
             let target_square = Position((pos.0 as i8 + dir * (n + 1)) as u8);
             ret += target_square;
 
