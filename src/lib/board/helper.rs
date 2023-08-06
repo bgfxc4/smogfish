@@ -1,9 +1,21 @@
 use super::{BitBoard, Board};
+use std::ops::{Index, IndexMut, Not};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Color {
     White,
     Black,
+}
+
+impl Not for Color {
+    type Output = Color;
+    #[inline(always)]
+    fn not(self) -> Self::Output {
+        match self {
+            Color::White => Color::Black,
+            Color::Black => Color::White,
+        }
+    }
 }
 
 #[repr(u8)]
@@ -25,6 +37,28 @@ impl Piece {
     };
 }
 
+#[derive(Debug, Clone)]
+pub struct PieceBoards([[BitBoard; 6]; 2]);
+impl Default for PieceBoards {
+    #[inline(always)]
+    fn default() -> Self {
+        Self([[BitBoard(0); 6]; 2])
+    }
+}
+impl Index<(Color, Piece)> for PieceBoards {
+    type Output = BitBoard;
+    #[inline(always)]
+    fn index(&self, (color, piece): (Color, Piece)) -> &Self::Output {
+        &self.0[color as usize][piece as usize]
+    }
+}
+impl IndexMut<(Color, Piece)> for PieceBoards {
+    #[inline(always)]
+    fn index_mut(&mut self, (color, piece): (Color, Piece)) -> &mut Self::Output {
+        &mut self.0[color as usize][piece as usize]
+    }
+}
+
 pub struct GameState;
 impl GameState {
     pub const PLAYING: u8 = 0;
@@ -35,7 +69,7 @@ impl GameState {
 
 pub fn load_board_from_fen(board: &mut Board, fen: &str) -> Result<(), String> {
     board.flags = 0;
-    board.pieces = [[BitBoard(0); 6]; 2];
+    board.pieces = PieceBoards::default();
     board.white_total = BitBoard(0);
     board.black_total = BitBoard(0);
     board.full_moves = 0;

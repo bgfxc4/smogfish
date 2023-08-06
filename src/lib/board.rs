@@ -7,7 +7,7 @@ pub mod precompute;
 pub mod sliding_pieces;
 
 use self::{
-    helper::{Color, GameState},
+    helper::{Color, GameState, PieceBoards},
     precompute::PRECOMPUTED_LOOKUPS,
 };
 use bitboard::BitBoard;
@@ -35,7 +35,7 @@ impl Move {
 #[derive(Clone)]
 pub struct Board {
     pub game_state: u8,
-    pieces: [[BitBoard; 6]; 2],
+    pieces: PieceBoards,
     white_total: BitBoard,
     black_total: BitBoard,
     check_mask: BitBoard, // marks every square, where a piece of the player, who just made a move
@@ -64,7 +64,7 @@ impl Board {
     pub fn new(fen: &str) -> Self {
         lazy_static::initialize(&precompute::PRECOMPUTED_LOOKUPS);
         let mut b: Self = Board {
-            pieces: [[BitBoard(0); 6]; 2],
+            pieces: Default::default(),
             game_state: GameState::PLAYING,
             white_total: BitBoard(0),
             black_total: BitBoard(0),
@@ -86,7 +86,7 @@ impl Board {
     }
 
     fn set(&mut self, pos: Position, piece: Piece, color: Color) {
-        self.pieces[color as usize][piece as usize] |= BitBoard(1 << pos);
+        self.pieces[(color, piece)] |= BitBoard(1 << pos);
     }
 
     #[inline]
@@ -105,16 +105,16 @@ impl Board {
 
     #[inline]
     pub fn piece_is_sliding(&self, idx: Position, color: Color) -> bool {
-        (self.pieces[color as usize][Piece::Queen as usize]
-            | self.pieces[color as usize][Piece::Rook as usize]
-            | self.pieces[color as usize][Piece::Bishop as usize])
+        (self.pieces[(color, Piece::Queen)]
+            | self.pieces[(color, Piece::Rook)]
+            | self.pieces[(color, Piece::Bishop)])
             & BitBoard(1 << idx)
             != BitBoard(0)
     }
 
     #[inline]
     pub fn piece_is_type(&self, idx: Position, color: Color, piece: Piece) -> bool {
-        self.pieces[color as usize][piece as usize] & BitBoard(1 << idx) != BitBoard(0)
+        self.pieces[(color, piece)] & BitBoard(1 << idx) != BitBoard(0)
     }
 
     pub fn get_by_idx(&self, idx: Position) -> (Piece, Color) {
@@ -122,18 +122,14 @@ impl Board {
         // the board, not really efficient
         if self.white_total & BitBoard(1 << idx) != BitBoard(0) {
             for p in Piece::ALL_NONEMPTY {
-                if self.pieces[Color::White as usize][p as usize] & BitBoard(1 << idx)
-                    != BitBoard(0)
-                {
+                if self.pieces[(Color::White, p)] & BitBoard(1 << idx) != BitBoard(0) {
                     return (p, Color::White);
                 }
             }
         }
         if self.black_total & BitBoard(1 << idx) != BitBoard(0) {
             for p in Piece::ALL_NONEMPTY {
-                if self.pieces[Color::Black as usize][p as usize] & BitBoard(1 << idx)
-                    != BitBoard(0)
-                {
+                if self.pieces[(Color::Black, p)] & BitBoard(1 << idx) != BitBoard(0) {
                     return (p, Color::Black);
                 }
             }
@@ -142,7 +138,7 @@ impl Board {
     }
 
     pub fn clear_bit(&mut self, pos: Position, piece: Piece, color: Color) {
-        self.pieces[color as usize][piece as usize] &= BitBoard(!(1 << pos));
+        self.pieces[(color, piece)] &= BitBoard(!(1 << pos));
     }
 
     fn set_color_to_move(&mut self, color: Color) {
@@ -218,10 +214,10 @@ impl Board {
     fn compute_zobrist_hash(&self) -> u64 {
         let mut hash_value = 0;
         for p in Piece::ALL_NONEMPTY {
-            for i in self.pieces[Color::White as usize][p as usize] {
+            for i in self.pieces[(Color::White, p)] {
                 hash_value ^= PRECOMPUTED_LOOKUPS.ZOBRIST_HASH_TABLE[i as usize][p as usize];
             }
-            for i in self.pieces[Color::Black as usize][p as usize] {
+            for i in self.pieces[(Color::Black, p)] {
                 hash_value ^= PRECOMPUTED_LOOKUPS.ZOBRIST_HASH_TABLE[i as usize][p as usize + 6];
             }
         }
@@ -253,7 +249,7 @@ impl Board {
             Color::Black
         };
         for p in Piece::ALL_NONEMPTY {
-            for i in self.pieces[side_to_play as usize][p as usize] {
+            for i in self.pieces[(side_to_play, p)] {
                 match p {
                     Piece::Pawn => pawn::get_all_moves_pseudolegal(self, i, &mut move_list),
                     Piece::Knight => knight::get_all_moves(self, i, &mut move_list),
@@ -276,45 +272,45 @@ impl Board {
 
     fn generate_total_bitboard(&mut self, color: Color) {
         if color == Color::White {
-            self.white_total = self.pieces[Color::White as usize][Piece::Pawn as usize]
-                | self.pieces[Color::White as usize][Piece::Knight as usize]
-                | self.pieces[Color::White as usize][Piece::Bishop as usize]
-                | self.pieces[Color::White as usize][Piece::Rook as usize]
-                | self.pieces[Color::White as usize][Piece::Queen as usize]
-                | self.pieces[Color::White as usize][Piece::King as usize];
+            self.white_total = self.pieces[(Color::White, Piece::Pawn)]
+                | self.pieces[(Color::White, Piece::Knight)]
+                | self.pieces[(Color::White, Piece::Bishop)]
+                | self.pieces[(Color::White, Piece::Rook)]
+                | self.pieces[(Color::White, Piece::Queen)]
+                | self.pieces[(Color::White, Piece::King)];
         } else {
-            self.black_total = self.pieces[Color::Black as usize][Piece::Pawn as usize]
-                | self.pieces[Color::Black as usize][Piece::Knight as usize]
-                | self.pieces[Color::Black as usize][Piece::Bishop as usize]
-                | self.pieces[Color::Black as usize][Piece::Rook as usize]
-                | self.pieces[Color::Black as usize][Piece::Queen as usize]
-                | self.pieces[Color::Black as usize][Piece::King as usize];
+            self.black_total = self.pieces[(Color::Black, Piece::Pawn)]
+                | self.pieces[(Color::Black, Piece::Knight)]
+                | self.pieces[(Color::Black, Piece::Bishop)]
+                | self.pieces[(Color::Black, Piece::Rook)]
+                | self.pieces[(Color::Black, Piece::Queen)]
+                | self.pieces[(Color::Black, Piece::King)];
         }
     }
 
     fn generate_check_mask(&mut self, color: Color) {
         // color => enemy color
-        let king_pos: u8 = self.pieces[1 - color as usize][Piece::King as usize]
+        let king_pos: u8 = self.pieces[(!color, Piece::King)]
             .into_iter()
             .next()
             .unwrap();
         self.check_mask = BitBoard(0);
-        for i in self.pieces[color as usize][Piece::Pawn as usize].into_iter() {
+        for i in self.pieces[(color, Piece::Pawn)].into_iter() {
             self.check_mask |= pawn::get_all_attacks(self, i);
         }
-        for i in self.pieces[color as usize][Piece::Knight as usize].into_iter() {
+        for i in self.pieces[(color, Piece::Knight)].into_iter() {
             self.check_mask |= knight::get_all_attacks(self, i);
         }
-        for i in self.pieces[color as usize][Piece::Bishop as usize].into_iter() {
+        for i in self.pieces[(color, Piece::Bishop)].into_iter() {
             self.check_mask |= sliding_pieces::get_all_attacks_bishop(self, i, color);
         }
-        for i in self.pieces[color as usize][Piece::Rook as usize].into_iter() {
+        for i in self.pieces[(color, Piece::Rook)].into_iter() {
             self.check_mask |= sliding_pieces::get_all_attacks_rook(self, i, color);
         }
-        for i in self.pieces[color as usize][Piece::Queen as usize].into_iter() {
+        for i in self.pieces[(color, Piece::Queen)].into_iter() {
             self.check_mask |= sliding_pieces::get_all_attacks_queen(self, i, color);
         }
-        for i in self.pieces[color as usize][Piece::King as usize].into_iter() {
+        for i in self.pieces[(color, Piece::King)].into_iter() {
             self.check_mask |= king::get_all_attacks(self, i);
         }
         if (self.check_mask & BitBoard(1 << king_pos)) != BitBoard(0) {

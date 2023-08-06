@@ -94,10 +94,10 @@ pub fn calc_king_attacker_masks(board: &mut Board, pos: u8) {
         (Color::Black, Color::White)
     };
 
-    let enemy_knight_attackers = board.pieces[enemy_side as usize][Piece::Knight as usize]
+    let enemy_knight_attackers = board.pieces[(enemy_side, Piece::Knight)]
         & PRECOMPUTED_LOOKUPS.KNIGHT_ATTACKS[pos as usize];
 
-    let enemy_pawn_attackers = board.pieces[enemy_side as usize][Piece::Pawn as usize]
+    let enemy_pawn_attackers = board.pieces[(enemy_side, Piece::Pawn)]
         & PRECOMPUTED_LOOKUPS.KING_PAWN_ATTACKS[friendly_side as usize][pos as usize];
 
     let mut enemy_sliding_piece_attackers = BitBoard(0);
