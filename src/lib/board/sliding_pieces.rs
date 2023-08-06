@@ -1,5 +1,5 @@
 use super::bitboard::BitBoard;
-use super::helper::{Pieces, Sides};
+use super::helper::{Color, Piece};
 use super::precompute::PRECOMPUTED_LOOKUPS;
 use super::{Board, Move, Position};
 
@@ -7,7 +7,7 @@ pub fn get_all_moves_bishop_pseudolegal(board: &Board, pos: Position, moves: &mu
     get_all_moves_sliding_pseudolegal(board, pos, moves, 4, 8);
 }
 
-pub fn get_all_attacks_bishop(board: &Board, pos: Position, color: u8) -> BitBoard {
+pub fn get_all_attacks_bishop(board: &Board, pos: Position, color: Color) -> BitBoard {
     get_all_attacks_sliding(board, pos, color, 4, 8)
 }
 
@@ -15,7 +15,7 @@ pub fn get_all_moves_rook_pseudolegal(board: &Board, pos: Position, moves: &mut 
     get_all_moves_sliding_pseudolegal(board, pos, moves, 0, 4);
 }
 
-pub fn get_all_attacks_rook(board: &Board, pos: Position, color: u8) -> BitBoard {
+pub fn get_all_attacks_rook(board: &Board, pos: Position, color: Color) -> BitBoard {
     get_all_attacks_sliding(board, pos, color, 0, 4)
 }
 
@@ -23,7 +23,7 @@ pub fn get_all_moves_queen_pseudolegal(board: &Board, pos: Position, moves: &mut
     get_all_moves_sliding_pseudolegal(board, pos, moves, 0, 8);
 }
 
-pub fn get_all_attacks_queen(board: &Board, pos: Position, color: u8) -> BitBoard {
+pub fn get_all_attacks_queen(board: &Board, pos: Position, color: Color) -> BitBoard {
     get_all_attacks_sliding(board, pos, color, 0, 8)
 }
 
@@ -45,9 +45,9 @@ pub fn get_all_moves_sliding_pseudolegal(
         return;
     }
     let friendly_side = if board.is_white_to_play() {
-        Sides::WHITE
+        Color::White
     } else {
-        Sides::BLACK
+        Color::Black
     };
 
     for dir_idx in start_dir..end_dir {
@@ -92,7 +92,7 @@ pub fn get_all_moves_sliding_pseudolegal(
 pub fn get_all_attacks_sliding(
     board: &Board,
     pos: Position,
-    color: u8,
+    color: Color,
     start_dir: usize,
     end_dir: usize,
 ) -> BitBoard {
@@ -107,7 +107,7 @@ pub fn get_all_attacks_sliding(
             // stop search if there is a piece blocking the line, but continue if it is the enemy
             // king, because he should not be included in this search
             if !board.tile_is_empty(target_square)
-                && !board.piece_is_type(target_square, color, Pieces::KING)
+                && !board.piece_is_type(target_square, color, Piece::King)
             {
                 break;
             }

@@ -1,14 +1,14 @@
 use super::bitboard::BitBoard;
-use super::helper::{Pieces, Sides};
+use super::helper::{Color, Piece};
 use super::precompute::PRECOMPUTED_LOOKUPS;
 use super::{Board, Move, Position};
 
 pub fn get_all_moves_pseudolegal(board: &Board, pos: Position, moves: &mut Vec<Move>) {
     let white_to_play = board.is_white_to_play();
     let (friendly_side, _enemy_side) = if white_to_play {
-        (Sides::WHITE, Sides::BLACK)
+        (Color::White, Color::Black)
     } else {
-        (Sides::BLACK, Sides::WHITE)
+        (Color::Black, Color::White)
     };
 
     for dir_idx in 0..8 {
@@ -41,28 +41,28 @@ pub fn get_all_moves_pseudolegal(board: &Board, pos: Position, moves: &mut Vec<M
     let total_castle_mask = board.white_total | board.black_total | board.check_mask;
     if white_to_play {
         if board.castle_white_short()
-            && total_castle_mask & PRECOMPUTED_LOOKUPS.KING_CASTLE_CHECKS[Sides::WHITE as usize][0]
+            && total_castle_mask & PRECOMPUTED_LOOKUPS.KING_CASTLE_CHECKS[Color::White as usize][0]
                 == BitBoard(0)
         {
             moves.push(Move::new_with_flags(pos, 6 + 0 * 8, 3));
         }
 
         if board.castle_white_long()
-            && total_castle_mask & PRECOMPUTED_LOOKUPS.KING_CASTLE_CHECKS[Sides::WHITE as usize][1]
+            && total_castle_mask & PRECOMPUTED_LOOKUPS.KING_CASTLE_CHECKS[Color::White as usize][1]
                 == BitBoard(0)
         {
             moves.push(Move::new_with_flags(pos, 2 + 0 * 8, 4));
         }
     } else {
         if board.castle_black_short()
-            && total_castle_mask & PRECOMPUTED_LOOKUPS.KING_CASTLE_CHECKS[Sides::BLACK as usize][0]
+            && total_castle_mask & PRECOMPUTED_LOOKUPS.KING_CASTLE_CHECKS[Color::Black as usize][0]
                 == BitBoard(0)
         {
             moves.push(Move::new_with_flags(pos, 6 + 7 * 8, 3));
         }
 
         if board.castle_black_long()
-            && total_castle_mask & PRECOMPUTED_LOOKUPS.KING_CASTLE_CHECKS[Sides::BLACK as usize][1]
+            && total_castle_mask & PRECOMPUTED_LOOKUPS.KING_CASTLE_CHECKS[Color::Black as usize][1]
                 == BitBoard(0)
         {
             moves.push(Move::new_with_flags(pos, 2 + 7 * 8, 4));
@@ -89,15 +89,15 @@ pub fn get_all_attacks(_board: &Board, pos: Position) -> BitBoard {
 // the enemy king can be ignored here, he can not be an attacker of the own king
 pub fn calc_king_attacker_masks(board: &mut Board, pos: u8) {
     let (friendly_side, enemy_side) = if board.is_white_to_play() {
-        (Sides::WHITE, Sides::BLACK)
+        (Color::White, Color::Black)
     } else {
-        (Sides::BLACK, Sides::WHITE)
+        (Color::Black, Color::White)
     };
 
-    let enemy_knight_attackers = board.pieces[enemy_side as usize][Pieces::KNIGHT as usize]
+    let enemy_knight_attackers = board.pieces[enemy_side as usize][Piece::Knight as usize]
         & PRECOMPUTED_LOOKUPS.KNIGHT_ATTACKS[pos as usize];
 
-    let enemy_pawn_attackers = board.pieces[enemy_side as usize][Pieces::PAWN as usize]
+    let enemy_pawn_attackers = board.pieces[enemy_side as usize][Piece::Pawn as usize]
         & PRECOMPUTED_LOOKUPS.KING_PAWN_ATTACKS[friendly_side as usize][pos as usize];
 
     let mut enemy_sliding_piece_attackers = BitBoard(0);
@@ -118,9 +118,9 @@ pub fn calc_king_attacker_masks(board: &mut Board, pos: u8) {
             // target square is not empty, therefore is enemy piece => stop search after adding
             // piece to mask (only if the piece that is found can attack in this direction)
             if !target_empty {
-                if board.piece_is_type(target_square, enemy_side, Pieces::QUEEN)
-                    || (board.piece_is_type(target_square, enemy_side, Pieces::ROOK) && dir_idx < 4)
-                    || (board.piece_is_type(target_square, enemy_side, Pieces::BISHOP)
+                if board.piece_is_type(target_square, enemy_side, Piece::Queen)
+                    || (board.piece_is_type(target_square, enemy_side, Piece::Rook) && dir_idx < 4)
+                    || (board.piece_is_type(target_square, enemy_side, Piece::Bishop)
                         && dir_idx >= 4)
                 {
                     enemy_sliding_piece_attackers |= BitBoard(1 << target_square);
@@ -142,9 +142,9 @@ pub fn calc_king_attacker_masks(board: &mut Board, pos: u8) {
 
 pub fn calc_pinned_pieces(board: &mut Board, pos: u8) {
     let (friendly_side, enemy_side) = if board.is_white_to_play() {
-        (Sides::WHITE, Sides::BLACK)
+        (Color::White, Color::Black)
     } else {
-        (Sides::BLACK, Sides::WHITE)
+        (Color::Black, Color::White)
     };
     let en_passant = board.get_en_passant();
 
@@ -161,8 +161,8 @@ pub fn calc_pinned_pieces(board: &mut Board, pos: u8) {
         for n in 0..PRECOMPUTED_LOOKUPS.NUM_SQUARES_TO_EDGE[pos as usize][dir_idx] {
             let target_square = (pos as i8 + dir * (n + 1)) as u8;
             let target_piece_is_pawn =
-                board.piece_is_type(target_square, Sides::WHITE, Pieces::PAWN)
-                    || board.piece_is_type(target_square, Sides::BLACK, Pieces::PAWN);
+                board.piece_is_type(target_square, Color::White, Piece::Pawn)
+                    || board.piece_is_type(target_square, Color::Black, Piece::Pawn);
             let target_piece_is_friendly = board.piece_color_on_tile(target_square, friendly_side);
 
             // if the direction is horizontal and the piece met is a pawn, check for en passant
@@ -177,7 +177,7 @@ pub fn calc_pinned_pieces(board: &mut Board, pos: u8) {
                 if !target_piece_is_friendly && en_passant == (target_square % 8) as u16 {
                     let next_piece_in_line_idx = (target_square as i8 + dir) as u8;
                     let next_piece_in_line_is_friendly_pawn =
-                        board.piece_is_type(next_piece_in_line_idx, friendly_side, Pieces::PAWN);
+                        board.piece_is_type(next_piece_in_line_idx, friendly_side, Piece::Pawn);
 
                     if next_piece_in_line_is_friendly_pawn {
                         found_pinned_piece_idx_en_passant = (target_square as i8 + dir) as u8;
@@ -206,9 +206,9 @@ pub fn calc_pinned_pieces(board: &mut Board, pos: u8) {
                 // target square is not empty, therefore is enemy piece => stop search after adding
                 // piece to mask (only if the piece that is found can attack in this direction)
 
-                if board.piece_is_type(target_square, enemy_side, Pieces::QUEEN)
-                    || (board.piece_is_type(target_square, enemy_side, Pieces::ROOK) && dir_idx < 4)
-                    || (board.piece_is_type(target_square, enemy_side, Pieces::BISHOP)
+                if board.piece_is_type(target_square, enemy_side, Piece::Queen)
+                    || (board.piece_is_type(target_square, enemy_side, Piece::Rook) && dir_idx < 4)
+                    || (board.piece_is_type(target_square, enemy_side, Piece::Bishop)
                         && dir_idx >= 4)
                 {
                     if found_pinned_piece_idx_en_passant != 65 {

@@ -1,5 +1,5 @@
 use super::bitboard::BitBoard;
-use super::helper::Sides;
+use super::helper::Color;
 use super::{Board, Move, Position};
 
 pub fn get_all_moves_pseudolegal(board: &Board, pos: Position, moves: &mut Vec<Move>) {
@@ -16,9 +16,9 @@ pub fn get_all_moves_pseudolegal(board: &Board, pos: Position, moves: &mut Vec<M
 
     let white_to_play = board.is_white_to_play();
     let enemy_side = if white_to_play {
-        Sides::BLACK
+        Color::Black
     } else {
-        Sides::WHITE
+        Color::White
     };
     let modi: i8 = if white_to_play { 1 } else { -1 };
     let en_passant = board.get_en_passant();

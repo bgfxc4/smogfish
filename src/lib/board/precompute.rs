@@ -1,6 +1,7 @@
-use crate::board::helper::Sides;
 use rand::Rng;
 use std::cmp;
+
+use crate::board::helper::Color;
 
 use super::BitBoard;
 
@@ -89,10 +90,10 @@ fn precompute_king_pawn_attacks() -> [[BitBoard; 64]; 2] {
         for col in 0..8 as i8 {
             let square_idx = row * 8 + col;
             let possible_attacks = [
-                (row + 1, col + 1, Sides::WHITE),
-                (row + 1, col - 1, Sides::WHITE),
-                (row - 1, col + 1, Sides::BLACK),
-                (row - 1, col - 1, Sides::BLACK),
+                (row + 1, col + 1, Color::White),
+                (row + 1, col - 1, Color::White),
+                (row - 1, col + 1, Color::Black),
+                (row - 1, col - 1, Color::Black),
             ];
             for p in possible_attacks {
                 if p.0 > 7 || p.0 < 0 || p.1 > 7 || p.1 < 0 {
