@@ -2,8 +2,15 @@ use smogfish::board::Board;
 
 #[test]
 fn run_perft() {
-    let b = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-    let nodes = perft(5, b, 5);
+    let args: Vec<String> = std::env::args().collect();
+    let b = match args.len() > 4 {
+        true => Board::new(args[4].as_str()),
+        false => Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+    };
+    let nodes = match args.len() > 5 {
+        true => perft(args[5].parse().unwrap(), b, args[5].parse().unwrap()),
+        false => perft(5, b, 5)
+    };
     println!("{} nodes", nodes);
 }
 

@@ -3,31 +3,31 @@ use super::helper::{Color, Piece};
 use super::precompute::{DIRECTION_OFFSETS, NUM_SQUARES_TO_EDGE};
 use super::{Board, Move, Position};
 
-pub fn get_all_moves_bishop_pseudolegal(board: &mut Board, pos: Position) {
-    get_all_moves_sliding_pseudolegal(board, pos, 4, 8);
+pub fn get_all_moves_bishop(board: &mut Board, pos: Position) {
+    get_all_moves_sliding(board, pos, 4, 8);
 }
 
 pub fn get_all_attacks_bishop(board: &Board, pos: Position, color: Color) -> BitBoard {
     get_all_attacks_sliding(board, pos, color, 4, 8)
 }
 
-pub fn get_all_moves_rook_pseudolegal(board: &mut Board, pos: Position) {
-    get_all_moves_sliding_pseudolegal(board, pos, 0, 4);
+pub fn get_all_moves_rook(board: &mut Board, pos: Position) {
+    get_all_moves_sliding(board, pos, 0, 4);
 }
 
 pub fn get_all_attacks_rook(board: &Board, pos: Position, color: Color) -> BitBoard {
     get_all_attacks_sliding(board, pos, color, 0, 4)
 }
 
-pub fn get_all_moves_queen_pseudolegal(board: &mut Board, pos: Position) {
-    get_all_moves_sliding_pseudolegal(board, pos, 0, 8);
+pub fn get_all_moves_queen(board: &mut Board, pos: Position) {
+    get_all_moves_sliding(board, pos, 0, 8);
 }
 
 pub fn get_all_attacks_queen(board: &Board, pos: Position, color: Color) -> BitBoard {
     get_all_attacks_sliding(board, pos, color, 0, 8)
 }
 
-pub fn get_all_moves_sliding_pseudolegal(
+pub fn get_all_moves_sliding(
     board: &mut Board,
     pos: Position,
     start_dir: usize,

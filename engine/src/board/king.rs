@@ -5,7 +5,7 @@ use super::precompute::{
 };
 use super::{Board, Move, Position};
 
-pub fn get_all_moves_pseudolegal(board: &mut Board, pos: Position) {
+pub fn get_all_moves(board: &mut Board, pos: Position) {
     let friendly_side = board.current_player();
 
     for dir_idx in 0..8 {

@@ -256,12 +256,12 @@ impl Board {
         for p in Piece::ALL_NONEMPTY {
             for i in self.pieces[(side_to_play, p)] {
                 match p {
-                    Piece::Pawn => pawn::get_all_moves_pseudolegal(self, i),
+                    Piece::Pawn => pawn::get_all_moves(self, i),
                     Piece::Knight => knight::get_all_moves(self, i),
-                    Piece::Bishop => sliding_pieces::get_all_moves_bishop_pseudolegal(self, i),
-                    Piece::Rook => sliding_pieces::get_all_moves_rook_pseudolegal(self, i),
-                    Piece::Queen => sliding_pieces::get_all_moves_queen_pseudolegal(self, i),
-                    Piece::King => king::get_all_moves_pseudolegal(self, i),
+                    Piece::Bishop => sliding_pieces::get_all_moves_bishop(self, i),
+                    Piece::Rook => sliding_pieces::get_all_moves_rook(self, i),
+                    Piece::Queen => sliding_pieces::get_all_moves_queen(self, i),
+                    Piece::King => king::get_all_moves(self, i),
                     _ => (),
                 };
             }
@@ -463,7 +463,7 @@ impl Board {
         }
 
         self.generate_total_bitboard(side_to_play);
-        if move_is_capture {
+        if move_is_capture || mov.flag == 1 {
             self.generate_total_bitboard(next_color_to_move);
         }
         self.generate_check_mask(side_to_play);

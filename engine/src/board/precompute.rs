@@ -93,7 +93,7 @@ const fn king_pawn_attacks() -> [[BitBoard; 64]; 2] {
                 (row - 1, col - 1, Color::Black)
             ] {
                 {
-                    if p.0 >= 7 && p.0 <= 0 && p.1 >= 7 && p.1 <= 0 {
+                    if p.0 <= 7 && p.0 >= 0 && p.1 <= 7 && p.1 >= 0 {
                         ret[p.2 as usize][square_idx as usize].0 |= 1 << (p.0 * 8 + p.1);
                     }
                 }
