@@ -200,13 +200,12 @@ impl Board {
 
     fn compute_zobrist_hash(&self) -> u64 {
         let mut hash_value = 0;
-        for i in 0..64 {
-            for p in 0..Pieces::EMPTY {
-                if self.pieces[Sides::WHITE as usize][p as usize] & BitBoard(1 << i) != BitBoard(0) {
-                    hash_value ^= PRECOMPUTED_LOOKUPS.ZOBRIST_HASH_TABLE[i][p as usize];
-                } else if self.pieces[Sides::BLACK as usize][p as usize] & BitBoard(1 << i) != BitBoard(0) {
-                    hash_value ^= PRECOMPUTED_LOOKUPS.ZOBRIST_HASH_TABLE[i][p as usize + 6];
-                }
+        for p in 0..Pieces::EMPTY {
+            for i in self.pieces[Sides::WHITE as usize][p as usize] {
+                hash_value ^= PRECOMPUTED_LOOKUPS.ZOBRIST_HASH_TABLE[i as usize][p as usize];
+            }
+            for i in self.pieces[Sides::BLACK as usize][p as usize] {
+                hash_value ^= PRECOMPUTED_LOOKUPS.ZOBRIST_HASH_TABLE[i as usize][p as usize + 6];
             }
         }
         if !self.is_white_to_play() {
