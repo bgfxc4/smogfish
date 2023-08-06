@@ -3,24 +3,24 @@ use super::helper::{Color, Piece};
 use super::precompute::PRECOMPUTED_LOOKUPS;
 use super::{Board, Move, Position};
 
-pub fn get_all_moves_bishop_pseudolegal(board: &Board, pos: Position, moves: &mut Vec<Move>) {
-    get_all_moves_sliding_pseudolegal(board, pos, moves, 4, 8);
+pub fn get_all_moves_bishop_pseudolegal(board: &mut Board, pos: Position) {
+    get_all_moves_sliding_pseudolegal(board, pos, 4, 8);
 }
 
 pub fn get_all_attacks_bishop(board: &Board, pos: Position, color: Color) -> BitBoard {
     get_all_attacks_sliding(board, pos, color, 4, 8)
 }
 
-pub fn get_all_moves_rook_pseudolegal(board: &Board, pos: Position, moves: &mut Vec<Move>) {
-    get_all_moves_sliding_pseudolegal(board, pos, moves, 0, 4);
+pub fn get_all_moves_rook_pseudolegal(board: &mut Board, pos: Position) {
+    get_all_moves_sliding_pseudolegal(board, pos, 0, 4);
 }
 
 pub fn get_all_attacks_rook(board: &Board, pos: Position, color: Color) -> BitBoard {
     get_all_attacks_sliding(board, pos, color, 0, 4)
 }
 
-pub fn get_all_moves_queen_pseudolegal(board: &Board, pos: Position, moves: &mut Vec<Move>) {
-    get_all_moves_sliding_pseudolegal(board, pos, moves, 0, 8);
+pub fn get_all_moves_queen_pseudolegal(board: &mut Board, pos: Position) {
+    get_all_moves_sliding_pseudolegal(board, pos, 0, 8);
 }
 
 pub fn get_all_attacks_queen(board: &Board, pos: Position, color: Color) -> BitBoard {
@@ -28,9 +28,8 @@ pub fn get_all_attacks_queen(board: &Board, pos: Position, color: Color) -> BitB
 }
 
 pub fn get_all_moves_sliding_pseudolegal(
-    board: &Board,
+    board: &mut Board,
     pos: Position,
-    moves: &mut Vec<Move>,
     start_dir: usize,
     end_dir: usize,
 ) {
@@ -44,11 +43,7 @@ pub fn get_all_moves_sliding_pseudolegal(
     if is_pinned && board.king_attacker_count != 0 {
         return;
     }
-    let friendly_side = if board.is_white_to_play() {
-        Color::White
-    } else {
-        Color::Black
-    };
+    let friendly_side = board.current_player();
 
     for dir_idx in start_dir..end_dir {
         let dir = PRECOMPUTED_LOOKUPS.DIRECTION_OFFSETS[dir_idx as usize] as i8;
@@ -78,7 +73,7 @@ pub fn get_all_moves_sliding_pseudolegal(
                 break;
             }
 
-            moves.push(Move::new(pos, target_square));
+            board.move_list.push(Move::new(pos, target_square));
 
             // target square is not empty, therefore is enemy piece => stop search after adding
             // move to list

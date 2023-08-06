@@ -31,7 +31,7 @@ pub fn main() {
         fill_board_buffer(&b, &mut board_buffer);
 
         let mut possible_moves: Vec<Move> = vec![];
-        if (b.get_by_idx(cursor_pos).1 == Color::White) == b.is_white_to_play() {
+        if b.get_by_idx(cursor_pos).1 == b.current_player() {
             get_possible_moves(&b, cursor_pos, &mut possible_moves);
         }
 

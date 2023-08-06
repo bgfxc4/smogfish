@@ -221,7 +221,7 @@ impl Board {
                 hash_value ^= PRECOMPUTED_LOOKUPS.ZOBRIST_HASH_TABLE[i as usize][p as usize + 6];
             }
         }
-        if !self.is_white_to_play() {
+        if self.current_player() == Color::Black {
             hash_value ^= PRECOMPUTED_LOOKUPS.ZOBRIST_SPECIAL_KEYS[0];
         }
         if self.castle_white_short() {
@@ -242,32 +242,20 @@ impl Board {
 
     pub fn generate_move_list(&mut self) {
         self.move_list.clear();
-        let mut move_list: Vec<Move> = vec![];
-        let side_to_play = if self.is_white_to_play() {
-            Color::White
-        } else {
-            Color::Black
-        };
+        let side_to_play = self.current_player();
         for p in Piece::ALL_NONEMPTY {
             for i in self.pieces[(side_to_play, p)] {
                 match p {
-                    Piece::Pawn => pawn::get_all_moves_pseudolegal(self, i, &mut move_list),
-                    Piece::Knight => knight::get_all_moves(self, i, &mut move_list),
-                    Piece::Bishop => {
-                        sliding_pieces::get_all_moves_bishop_pseudolegal(self, i, &mut move_list)
-                    }
-                    Piece::Rook => {
-                        sliding_pieces::get_all_moves_rook_pseudolegal(self, i, &mut move_list)
-                    }
-                    Piece::Queen => {
-                        sliding_pieces::get_all_moves_queen_pseudolegal(self, i, &mut move_list)
-                    }
-                    Piece::King => king::get_all_moves_pseudolegal(self, i, &mut move_list),
+                    Piece::Pawn => pawn::get_all_moves_pseudolegal(self, i),
+                    Piece::Knight => knight::get_all_moves(self, i),
+                    Piece::Bishop => sliding_pieces::get_all_moves_bishop_pseudolegal(self, i),
+                    Piece::Rook => sliding_pieces::get_all_moves_rook_pseudolegal(self, i),
+                    Piece::Queen => sliding_pieces::get_all_moves_queen_pseudolegal(self, i),
+                    Piece::King => king::get_all_moves_pseudolegal(self, i),
                     _ => (),
                 };
             }
         }
-        self.move_list = move_list;
     }
 
     fn generate_total_bitboard(&mut self, color: Color) {
@@ -326,19 +314,19 @@ impl Board {
     }
 
     #[inline]
-    pub fn is_white_to_play(&self) -> bool {
-        self.flags & (1) == Color::White as u16
+    pub fn current_player(&self) -> Color {
+        match self.flags & (1) {
+            0 => Color::White,
+            1 => Color::Black,
+            _ => unreachable!(),
+        }
     }
 
     pub fn make_move(&mut self, mov: &Move) {
         let p = self.get_by_idx(mov.from);
         let target_piece = self.get_by_idx(mov.to);
         let move_is_capture = target_piece.0 != Piece::Empty;
-        let (side_to_play, oponent_side) = if self.is_white_to_play() {
-            (Color::White, Color::Black)
-        } else {
-            (Color::Black, Color::White)
-        };
+        let (side_to_play, oponent_side) = (self.current_player(), !self.current_player());
 
         self.clear_bit(mov.from, p.0, side_to_play);
         if move_is_capture {
@@ -450,7 +438,7 @@ impl Board {
         }
 
         let mut next_color_to_move = Color::Black;
-        if !self.is_white_to_play() {
+        if self.current_player() == Color::Black {
             self.full_moves += 1;
             next_color_to_move = Color::White;
         }

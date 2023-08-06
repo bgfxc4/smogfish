@@ -3,13 +3,8 @@ use super::helper::{Color, Piece};
 use super::precompute::PRECOMPUTED_LOOKUPS;
 use super::{Board, Move, Position};
 
-pub fn get_all_moves_pseudolegal(board: &Board, pos: Position, moves: &mut Vec<Move>) {
-    let white_to_play = board.is_white_to_play();
-    let (friendly_side, _enemy_side) = if white_to_play {
-        (Color::White, Color::Black)
-    } else {
-        (Color::Black, Color::White)
-    };
+pub fn get_all_moves_pseudolegal(board: &mut Board, pos: Position) {
+    let friendly_side = board.current_player();
 
     for dir_idx in 0..8 {
         if PRECOMPUTED_LOOKUPS.NUM_SQUARES_TO_EDGE[pos as usize][dir_idx] == 0 {
@@ -35,37 +30,52 @@ pub fn get_all_moves_pseudolegal(board: &Board, pos: Position, moves: &mut Vec<M
             continue;
         }
 
-        moves.push(Move::new(pos, target_square));
+        board.move_list.push(Move::new(pos, target_square));
     }
 
     let total_castle_mask = board.white_total | board.black_total | board.check_mask;
-    if white_to_play {
-        if board.castle_white_short()
-            && total_castle_mask & PRECOMPUTED_LOOKUPS.KING_CASTLE_CHECKS[Color::White as usize][0]
-                == BitBoard(0)
-        {
-            moves.push(Move::new_with_flags(pos, 6 + 0 * 8, 3));
-        }
+    match friendly_side {
+        Color::White => {
+            if board.castle_white_short()
+                && total_castle_mask
+                    & PRECOMPUTED_LOOKUPS.KING_CASTLE_CHECKS[Color::White as usize][0]
+                    == BitBoard(0)
+            {
+                board
+                    .move_list
+                    .push(Move::new_with_flags(pos, 6 + 0 * 8, 3));
+            }
 
-        if board.castle_white_long()
-            && total_castle_mask & PRECOMPUTED_LOOKUPS.KING_CASTLE_CHECKS[Color::White as usize][1]
-                == BitBoard(0)
-        {
-            moves.push(Move::new_with_flags(pos, 2 + 0 * 8, 4));
+            if board.castle_white_long()
+                && total_castle_mask
+                    & PRECOMPUTED_LOOKUPS.KING_CASTLE_CHECKS[Color::White as usize][1]
+                    == BitBoard(0)
+            {
+                board
+                    .move_list
+                    .push(Move::new_with_flags(pos, 2 + 0 * 8, 4));
+            }
         }
-    } else {
-        if board.castle_black_short()
-            && total_castle_mask & PRECOMPUTED_LOOKUPS.KING_CASTLE_CHECKS[Color::Black as usize][0]
-                == BitBoard(0)
-        {
-            moves.push(Move::new_with_flags(pos, 6 + 7 * 8, 3));
-        }
+        Color::Black => {
+            if board.castle_black_short()
+                && total_castle_mask
+                    & PRECOMPUTED_LOOKUPS.KING_CASTLE_CHECKS[Color::Black as usize][0]
+                    == BitBoard(0)
+            {
+                board
+                    .move_list
+                    .push(Move::new_with_flags(pos, 6 + 7 * 8, 3));
+            }
 
-        if board.castle_black_long()
-            && total_castle_mask & PRECOMPUTED_LOOKUPS.KING_CASTLE_CHECKS[Color::Black as usize][1]
-                == BitBoard(0)
-        {
-            moves.push(Move::new_with_flags(pos, 2 + 7 * 8, 4));
+            if board.castle_black_long()
+                && total_castle_mask
+                    & PRECOMPUTED_LOOKUPS.KING_CASTLE_CHECKS[Color::Black as usize][1]
+                    == BitBoard(0)
+            {
+                board
+                    .move_list
+                    .push(Move::new_with_flags(pos, 2 + 7 * 8, 4));
+            }
         }
     }
 }
@@ -88,11 +98,8 @@ pub fn get_all_attacks(_board: &Board, pos: Position) -> BitBoard {
 
 // the enemy king can be ignored here, he can not be an attacker of the own king
 pub fn calc_king_attacker_masks(board: &mut Board, pos: u8) {
-    let (friendly_side, enemy_side) = if board.is_white_to_play() {
-        (Color::White, Color::Black)
-    } else {
-        (Color::Black, Color::White)
-    };
+    let friendly_side = board.current_player();
+    let enemy_side = !friendly_side;
 
     let enemy_knight_attackers = board.pieces[(enemy_side, Piece::Knight)]
         & PRECOMPUTED_LOOKUPS.KNIGHT_ATTACKS[pos as usize];
@@ -141,11 +148,8 @@ pub fn calc_king_attacker_masks(board: &mut Board, pos: u8) {
 }
 
 pub fn calc_pinned_pieces(board: &mut Board, pos: u8) {
-    let (friendly_side, enemy_side) = if board.is_white_to_play() {
-        (Color::White, Color::Black)
-    } else {
-        (Color::Black, Color::White)
-    };
+    let friendly_side = board.current_player();
+    let enemy_side = !friendly_side;
     let en_passant = board.get_en_passant();
 
     board.pinned_pieces = BitBoard(0);

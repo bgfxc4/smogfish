@@ -156,11 +156,7 @@ pub fn load_board_from_fen(board: &mut Board, fen: &str) -> Result<(), String> {
 
     board.generate_total_bitboard(Color::White);
     board.generate_total_bitboard(Color::Black);
-    board.generate_check_mask(if board.is_white_to_play() {
-        Color::Black
-    } else {
-        Color::White
-    });
+    board.generate_check_mask(!board.current_player());
 
     board.generate_move_list();
 
