@@ -112,10 +112,10 @@ fn handle_input(
         "a" => cursor_pos.0 -= 1,
         cmd => {
             let mut chars = cmd.chars().into_iter();
-            let col = chars.nth(0);
-            let row = chars.nth(0);
+            let col = chars.next();
+            let row = chars.next();
             if row.is_some()
-                && chars.count() == 0
+                && chars.next().is_none()
                 && (col.unwrap().is_ascii())
                 && (row.unwrap().is_digit(10))
             {
