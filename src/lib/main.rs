@@ -1,5 +1,3 @@
 #![feature(stmt_expr_attributes)]
+#![feature(lazy_cell)]
 pub mod board;
-
-#[macro_use]
-extern crate lazy_static;

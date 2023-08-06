@@ -74,7 +74,6 @@ pub struct Board {
 
 impl Board {
     pub fn new(fen: &str) -> Self {
-        lazy_static::initialize(&precompute::PRECOMPUTED_LOOKUPS);
         let mut b: Self = Board {
             pieces: Default::default(),
             game_state: GameState::Playing,

@@ -1,12 +1,10 @@
-use rand::Rng;
-use std::cmp;
-
-use crate::board::helper::Color;
-
 use super::BitBoard;
+use crate::board::helper::Color;
+use rand::Rng;
+use std::{cmp, sync::LazyLock};
 
-lazy_static! {
-    pub static ref PRECOMPUTED_LOOKUPS: PrecomputedLookups = PrecomputedLookups {
+pub static PRECOMPUTED_LOOKUPS: LazyLock<PrecomputedLookups> =
+    LazyLock::new(|| PrecomputedLookups {
         NUM_SQUARES_TO_EDGE: precompute_num_squares_to_edge(),
         DIRECTION_OFFSETS: [8, -8, -1, 1, 7, -7, 9, -9],
         KNIGHT_ATTACKS: precompute_knight_attacks(),
@@ -15,8 +13,8 @@ lazy_static! {
         ZOBRIST_HASH_TABLE: init_zobrist_hash_table(),
         // black to move, white short castle, white long castle, black short castle, black long castle
         ZOBRIST_SPECIAL_KEYS: init_zobrist_special_keys(),
-    };
-}
+    });
+
 #[allow(non_snake_case)]
 pub struct PrecomputedLookups {
     pub NUM_SQUARES_TO_EDGE: [[i8; 8]; 64],

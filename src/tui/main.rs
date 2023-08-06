@@ -1,8 +1,7 @@
 use colored::Colorize;
-use std::io;
-
 use smogfish::board::helper::{Color, GameState, Piece, Position};
 use smogfish::board::{Board, Move};
+use std::io;
 
 pub fn main() {
     let mut board_buffer: [String; 8] = Default::default();
