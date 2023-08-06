@@ -1,5 +1,4 @@
 use super::bitboard::BitBoard;
-use super::helper::Pieces;
 use super::helper::Sides;
 use super::{Position, Board, Move};
 
@@ -12,6 +11,7 @@ pub fn get_all_moves_pseudolegal(board: &Board, pos: Position, moves: &mut Vec<M
     let attacker_and_block_mask = if board.king_attacker_count == 0 { BitBoard(0) } else { board.king_attacker_block_mask | board.king_attacker_mask };
 
     let white_to_play = board.is_white_to_play();
+    let enemy_side = if white_to_play { Sides::BLACK } else { Sides::WHITE };
     let modi: i8 = if white_to_play { 1 } else { -1 };
     let en_passant = board.get_en_passant();
     let is_pinned = board.pinned_pieces & BitBoard(1 << pos) != BitBoard(0);
@@ -21,7 +21,7 @@ pub fn get_all_moves_pseudolegal(board: &Board, pos: Position, moves: &mut Vec<M
     if (board.king_attacker_count != 1 || attacker_and_block_mask & BitBoard(1 << p) != BitBoard(0)) &&
         (!is_pinned || board.pinned_pieces_move_mask & BitBoard(1 << p) != BitBoard(0)) {
 
-        if board.get_by_idx(p).0 == Pieces::EMPTY {
+        if board.tile_is_empty(p) {
             if (white_to_play && p/8 == 7) || !white_to_play && p/8 == 0 {
                 moves.push(Move::new_with_flags(pos, p, 5));
                 moves.push(Move::new_with_flags(pos, p, 6));
@@ -39,8 +39,8 @@ pub fn get_all_moves_pseudolegal(board: &Board, pos: Position, moves: &mut Vec<M
     if is_in_start_pos && (board.king_attacker_count != 1 || attacker_and_block_mask & BitBoard(1 << p) != BitBoard(0)) &&
         (!is_pinned || board.pinned_pieces_move_mask & BitBoard(1 << p) != BitBoard(0)) {
 
-        if board.get_by_idx(p).0 == Pieces::EMPTY &&
-            board.get_by_idx((pos as i8+8*modi) as u8).0 == Pieces::EMPTY {
+        if board.tile_is_empty(p) &&
+            board.tile_is_empty((pos as i8+8*modi) as u8) {
             moves.push(Move::new_with_flags(pos, p, 2));
         }
     }
@@ -51,9 +51,7 @@ pub fn get_all_moves_pseudolegal(board: &Board, pos: Position, moves: &mut Vec<M
         if board.king_attacker_count != 1 || attacker_and_block_mask & BitBoard(1 << p) != BitBoard(0) &&
             (!is_pinned || board.pinned_pieces_move_mask & BitBoard(1 << p) != BitBoard(0)) {
 
-            let piece = board.get_by_idx(p);
-
-            if ((piece.1 == Sides::WHITE) != white_to_play) && piece.0 != Pieces::EMPTY {
+            if board.piece_color_on_tile(p, enemy_side) && !board.tile_is_empty(p) {
                 if (white_to_play && p/8 == 7) || !white_to_play && p/8 == 0 {
                     moves.push(Move::new_with_flags(pos, p, 5));
                     moves.push(Move::new_with_flags(pos, p, 6));
@@ -79,8 +77,7 @@ pub fn get_all_moves_pseudolegal(board: &Board, pos: Position, moves: &mut Vec<M
         if board.king_attacker_count != 1 || attacker_and_block_mask & BitBoard(1 << p) != BitBoard(0) &&
             (!is_pinned || board.pinned_pieces_move_mask & BitBoard(1 << p) != BitBoard(0)) {
 
-            let piece = board.get_by_idx(p);
-            if ((piece.1 == Sides::WHITE) != white_to_play) && piece.0 != Pieces::EMPTY {
+            if board.piece_color_on_tile(p, enemy_side) && !board.tile_is_empty(p) {
                 if (white_to_play && p/8 == 7) || !white_to_play && p/8 == 0 {
                     moves.push(Move::new_with_flags(pos, p, 5));
                     moves.push(Move::new_with_flags(pos, p, 6));

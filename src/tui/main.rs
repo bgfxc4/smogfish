@@ -145,5 +145,6 @@ fn make_promotion_move(board: &mut Board, mov: &Move) {
 }
 
 fn get_possible_moves(b: &Board, cursor_pos: Position, possible_moves: &mut Vec<Move>) {
-    possible_moves.append(&mut b.get_all_possible_moves(cursor_pos));
+    let mut a: Vec<Move> = b.move_list.iter().filter(|m| m.from == cursor_pos).map(|m| m.clone()).collect();
+    possible_moves.append(&mut a);
 }

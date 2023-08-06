@@ -8,29 +8,9 @@ pub mod precompute;
 use helper::{Sides, Pieces};
 use bitboard::BitBoard;
 
-// use std::cmp::PartialEq;
-
 use self::{precompute::PRECOMPUTED_LOOKUPS, helper::GameState};
 
 pub type Position = u8;
-// #[derive(Clone)]
-// pub struct Position {
-//     pub col: u8,
-//     pub row: u8,
-// }
-//
-// impl Position {
-//     pub fn new(col: u8, row: u8) -> Self {
-//         Position{col, row}
-//     }
-// }
-//
-// impl PartialEq for Position {
-//     #[inline]
-//     fn eq(&self, other: &Self) -> bool {
-//         self.row == other.row && self.col == other.col
-//     }
-// }
 
 #[derive(Clone)]
 pub struct Move {
@@ -105,9 +85,25 @@ impl Board {
         self.pieces[color as usize][piece as usize] |= BitBoard(1 << pos);
     }
 
-    // pub fn get(&self, pos: u8) -> (u8, u8) {
-    //     self.get_by_idx(pos)
-    // }
+    #[inline]
+    pub fn tile_is_empty(&self, idx: Position) -> bool {
+        (self.white_total | self.black_total) & BitBoard(1 << idx) == BitBoard(0)
+    }
+
+    #[inline]
+    pub fn piece_color_on_tile(&self, idx: Position, color: u8) -> bool {
+        if color == Sides::WHITE { self.white_total & BitBoard(1 << idx) != BitBoard(0) } else { self.black_total & BitBoard(1 << idx) != BitBoard(0) }
+    }
+
+    #[inline]
+    pub fn piece_is_sliding(&self, idx: Position, color: u8) -> bool {
+        (self.pieces[color as usize][Pieces::QUEEN as usize] | self.pieces[color as usize][Pieces::ROOK as usize] | self.pieces[color as usize][Pieces::BISHOP as usize]) & BitBoard(1 << idx) != BitBoard(0)
+    }
+
+    #[inline]
+    pub fn piece_is_type(&self, idx: Position, color: u8, piece: u8) -> bool {
+        self.pieces[color as usize][piece as usize] & BitBoard(1 << idx) != BitBoard(0)
+    }
 
     pub fn get_by_idx(&self, idx: Position) -> (u8, u8) { // dont use in engine, only for showing
                                                          // the board, not really efficient
@@ -232,24 +228,6 @@ impl Board {
         hash_value
     }
 
-    pub fn get_all_possible_moves(&self, pos: Position) -> Vec<Move> {
-        let mut pseudolegal_moves: Vec<Move> = vec![];
-        let p = self.get_by_idx(pos);
-        match p.0 {
-            Pieces::PAWN => pawn::get_all_moves_pseudolegal(self, pos, &mut pseudolegal_moves),
-            Pieces::KNIGHT => knight::get_all_moves(self, pos, &mut pseudolegal_moves),
-            Pieces::BISHOP => sliding_pieces::get_all_moves_bishop_pseudolegal(self, pos, &mut pseudolegal_moves),
-            Pieces::ROOK => sliding_pieces::get_all_moves_rook_pseudolegal(self, pos, &mut pseudolegal_moves),
-            Pieces::QUEEN => sliding_pieces::get_all_moves_queen_pseudolegal(self, pos, &mut pseudolegal_moves),
-            Pieces::KING => king::get_all_moves_pseudolegal(self, pos, &mut pseudolegal_moves),
-            _ => (),
-        };
-
-        // TODO: filter out illegal moves
-
-        return pseudolegal_moves;
-    }
-
     pub fn generate_move_list(&mut self) {
         self.move_list.clear();
         let mut move_list: Vec<Move> = vec![];
@@ -280,26 +258,32 @@ impl Board {
         }
     }
 
-    fn generate_check_mask(&mut self, color: u8) {
+    fn generate_check_mask(&mut self, color: u8) { // color => enemy color
+        let enemy_side = if color == Sides::WHITE { Sides::BLACK } else { Sides::WHITE };
         let mut king_pos: u8 = 0;
         self.check_mask = BitBoard(0);
         for idx in 0..64 {
-            let piece = self.get_by_idx(idx);
-            if piece.1 != color {
-                if piece.0 == Pieces::KING {
+            if !self.piece_color_on_tile(idx, color) {
+                if self.piece_is_type(idx, enemy_side, Pieces::KING) {
                     king_pos = idx;
                 }
                 continue;
             }
-            self.check_mask |= match piece.0 {
-                Pieces::PAWN => pawn::get_all_attacks(self, idx),
-                Pieces::KNIGHT => knight::get_all_attacks(self, idx),
-                Pieces::BISHOP => sliding_pieces::get_all_attacks_bishop(self, idx, color),
-                Pieces::ROOK => sliding_pieces::get_all_attacks_rook(self, idx, color),
-                Pieces::QUEEN => sliding_pieces::get_all_attacks_queen(self, idx, color),
-                Pieces::KING => king::get_all_attacks(self, idx),
-                _ => BitBoard(0),
-            };
+
+            if self.piece_is_type(idx, color, Pieces::PAWN) {
+                self.check_mask |= pawn::get_all_attacks(self, idx);
+            } else if self.piece_is_type(idx, color, Pieces::KNIGHT) {
+                self.check_mask |= knight::get_all_attacks(self, idx);
+            } else if self.piece_is_type(idx, color, Pieces::BISHOP) {
+                self.check_mask |= sliding_pieces::get_all_attacks_bishop(self, idx, color);
+            } else if self.piece_is_type(idx, color, Pieces::ROOK) {
+                self.check_mask |= sliding_pieces::get_all_attacks_rook(self, idx, color);
+            } else if self.piece_is_type(idx, color, Pieces::QUEEN) {
+                self.check_mask |= sliding_pieces::get_all_attacks_queen(self, idx, color);
+            } else if self.piece_is_type(idx, color, Pieces::KING) {
+                self.check_mask |= king::get_all_attacks(self, idx);
+            }
+
         }
         if (self.check_mask & BitBoard(1 << king_pos)) != BitBoard(0) {
             king::calc_king_attacker_masks(self, king_pos);

@@ -38,16 +38,16 @@ pub fn get_all_moves_sliding_pseudolegal(board: &Board, pos: Position, moves: &m
     if is_pinned && board.king_attacker_count != 0 {
         return
     }
+    let friendly_side = if board.is_white_to_play() { Sides::WHITE } else { Sides::BLACK };
 
     for dir_idx in start_dir .. end_dir {
         let dir = PRECOMPUTED_LOOKUPS.DIRECTION_OFFSETS[dir_idx as usize] as i8;
         for n in 0..PRECOMPUTED_LOOKUPS.NUM_SQUARES_TO_EDGE[pos as usize][dir_idx] { 
-            let target_square = pos as i8 + dir * (n+1);
+            let target_square = (pos as i8 + dir * (n+1)) as u8;
             if board.king_attacker_count == 1 &&
                 (board.king_attacker_mask | board.king_attacker_block_mask) & BitBoard(1 << target_square) == BitBoard(0) {
 
-                let target_piece = board.get_by_idx(target_square as u8);
-                if target_piece.0 != Pieces::EMPTY {
+                if !board.tile_is_empty(target_square) {
                     break;
                 } else {
                     continue;
@@ -58,18 +58,17 @@ pub fn get_all_moves_sliding_pseudolegal(board: &Board, pos: Position, moves: &m
                 break;
             }
 
-            let target_piece = board.get_by_idx(target_square as u8);
-
+            let target_square_is_empty = board.tile_is_empty(target_square);
             // target square is not empty and there is a friendly piece => stop search in this direction
-            if (target_piece.0 != Pieces::EMPTY) && ((target_piece.1 == Sides::WHITE) == board.is_white_to_play()) {
+            if !target_square_is_empty && board.piece_color_on_tile(target_square, friendly_side) {
                 break;
             }
 
-            moves.push(Move::new(pos, target_square as u8));
+            moves.push(Move::new(pos, target_square));
 
             // target square is not empty, therefore is enemy piece => stop search after adding
             // move to list 
-            if target_piece.0 != Pieces::EMPTY {
+            if !target_square_is_empty {
                 break;
             }
         }
@@ -83,14 +82,12 @@ pub fn get_all_attacks_sliding(board: &Board, pos: Position, color: u8, start_di
         let dir = PRECOMPUTED_LOOKUPS.DIRECTION_OFFSETS[dir_idx as usize] as i8;
         for n in 0..PRECOMPUTED_LOOKUPS.NUM_SQUARES_TO_EDGE[pos as usize][dir_idx] {
 
-            let target_square = pos as i8 + dir * (n+1);
-            let target_piece = board.get_by_idx(target_square as u8);
-
+            let target_square = (pos as i8 + dir * (n+1)) as u8;
             ret |= BitBoard(1 << target_square);
 
             // stop search if there is a piece blocking the line, but continue if it is the enemy
             // king, because he should not be included in this search 
-            if (target_piece.0 != Pieces::EMPTY) && !(target_piece.0 == Pieces::KING && target_piece.1 != color) {
+            if !board.tile_is_empty(target_square) && !board.piece_is_type(target_square, color, Pieces::KING) {
                 break;
             }
         }
