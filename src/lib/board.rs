@@ -233,18 +233,16 @@ impl Board {
         let mut move_list: Vec<Move> = vec![];
         let side_to_play = if self.is_white_to_play() { Sides::WHITE } else { Sides::BLACK };
         for p in 0..6 {
-            for i in 0..64 {
-                if self.pieces[side_to_play as usize][p] & BitBoard(1 << i) != BitBoard(0) {
-                    match p as u8 {
-                        Pieces::PAWN => pawn::get_all_moves_pseudolegal(self, i, &mut move_list),
-                        Pieces::KNIGHT => knight::get_all_moves(self, i, &mut move_list),
-                        Pieces::BISHOP => sliding_pieces::get_all_moves_bishop_pseudolegal(self, i, &mut move_list),
-                        Pieces::ROOK => sliding_pieces::get_all_moves_rook_pseudolegal(self, i, &mut move_list),
-                        Pieces::QUEEN => sliding_pieces::get_all_moves_queen_pseudolegal(self, i, &mut move_list),
-                        Pieces::KING => king::get_all_moves_pseudolegal(self, i, &mut move_list),
-                        _ => (),
-                    };
-                }
+            for i in self.pieces[side_to_play as usize][p] {
+                match p as u8 {
+                    Pieces::PAWN => pawn::get_all_moves_pseudolegal(self, i, &mut move_list),
+                    Pieces::KNIGHT => knight::get_all_moves(self, i, &mut move_list),
+                    Pieces::BISHOP => sliding_pieces::get_all_moves_bishop_pseudolegal(self, i, &mut move_list),
+                    Pieces::ROOK => sliding_pieces::get_all_moves_rook_pseudolegal(self, i, &mut move_list),
+                    Pieces::QUEEN => sliding_pieces::get_all_moves_queen_pseudolegal(self, i, &mut move_list),
+                    Pieces::KING => king::get_all_moves_pseudolegal(self, i, &mut move_list),
+                    _ => (),
+                };
             }
         }
         self.move_list = move_list;
