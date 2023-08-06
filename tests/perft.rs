@@ -25,10 +25,10 @@ fn perft(depth: u8, b: Board) -> u64 {
         if depth == 5 {
             println!(
                 "move {} {} to {} {}, {} nodes",
-                m.from % 8,
-                m.from / 8,
-                m.to % 8,
-                m.to / 8,
+                m.from.file(),
+                m.from.rank(),
+                m.to.file(),
+                m.to.rank(),
                 n
             );
         }

@@ -7,13 +7,11 @@ pub mod precompute;
 pub mod sliding_pieces;
 
 use self::{
-    helper::{Color, GameState, PieceBoards},
+    helper::{Color, GameState, PieceBoards, Position},
     precompute::PRECOMPUTED_LOOKUPS,
 };
 use bitboard::BitBoard;
 use helper::Piece;
-
-pub type Position = u8;
 
 #[derive(Clone)]
 pub struct Move {
@@ -100,20 +98,20 @@ impl Board {
     }
 
     fn set(&mut self, pos: Position, piece: Piece, color: Color) {
-        self.pieces[(color, piece)] |= BitBoard(1 << pos);
+        self.pieces[(color, piece)] += pos;
     }
 
     #[inline]
     pub fn tile_is_empty(&self, idx: Position) -> bool {
-        (self.white_total | self.black_total) & BitBoard(1 << idx) == BitBoard(0)
+        !(self.white_total | self.black_total).has(idx)
     }
 
     #[inline]
     pub fn piece_color_on_tile(&self, idx: Position, color: Color) -> bool {
         if color == Color::White {
-            self.white_total & BitBoard(1 << idx) != BitBoard(0)
+            self.white_total.has(idx)
         } else {
-            self.black_total & BitBoard(1 << idx) != BitBoard(0)
+            self.black_total.has(idx)
         }
     }
 
@@ -122,28 +120,27 @@ impl Board {
         (self.pieces[(color, Piece::Queen)]
             | self.pieces[(color, Piece::Rook)]
             | self.pieces[(color, Piece::Bishop)])
-            & BitBoard(1 << idx)
-            != BitBoard(0)
+            .has(idx)
     }
 
     #[inline]
     pub fn piece_is_type(&self, idx: Position, color: Color, piece: Piece) -> bool {
-        self.pieces[(color, piece)] & BitBoard(1 << idx) != BitBoard(0)
+        self.pieces[(color, piece)].has(idx)
     }
 
     /// dont use in engine, only for showing
     /// the board, not really efficient
     pub fn get_by_idx(&self, idx: Position) -> (Piece, Color) {
-        if self.white_total & BitBoard(1 << idx) != BitBoard(0) {
+        if self.white_total.has(idx) {
             for p in Piece::ALL_NONEMPTY {
-                if self.pieces[(Color::White, p)] & BitBoard(1 << idx) != BitBoard(0) {
+                if self.pieces[(Color::White, p)].has(idx) {
                     return (p, Color::White);
                 }
             }
         }
-        if self.black_total & BitBoard(1 << idx) != BitBoard(0) {
+        if self.black_total.has(idx) {
             for p in Piece::ALL_NONEMPTY {
-                if self.pieces[(Color::Black, p)] & BitBoard(1 << idx) != BitBoard(0) {
+                if self.pieces[(Color::Black, p)].has(idx) {
                     return (p, Color::Black);
                 }
             }
@@ -152,7 +149,7 @@ impl Board {
     }
 
     pub fn clear_bit(&mut self, pos: Position, piece: Piece, color: Color) {
-        self.pieces[(color, piece)] &= BitBoard(!(1 << pos));
+        self.pieces[(color, piece)] -= pos;
     }
 
     fn set_color_to_move(&mut self, color: Color) {
@@ -229,10 +226,10 @@ impl Board {
         let mut hash_value = 0;
         for p in Piece::ALL_NONEMPTY {
             for i in self.pieces[(Color::White, p)] {
-                hash_value ^= PRECOMPUTED_LOOKUPS.ZOBRIST_HASH_TABLE[i as usize][p as usize];
+                hash_value ^= PRECOMPUTED_LOOKUPS.ZOBRIST_HASH_TABLE[i.0 as usize][p as usize];
             }
             for i in self.pieces[(Color::Black, p)] {
-                hash_value ^= PRECOMPUTED_LOOKUPS.ZOBRIST_HASH_TABLE[i as usize][p as usize + 6];
+                hash_value ^= PRECOMPUTED_LOOKUPS.ZOBRIST_HASH_TABLE[i.0 as usize][p as usize + 6];
             }
         }
         if self.current_player() == Color::Black {
@@ -292,7 +289,7 @@ impl Board {
 
     fn generate_check_mask(&mut self, color: Color) {
         // color => enemy color
-        let king_pos: u8 = self.pieces[(!color, Piece::King)]
+        let king_pos = self.pieces[(!color, Piece::King)]
             .into_iter()
             .next()
             .unwrap();
@@ -315,7 +312,7 @@ impl Board {
         for i in self.pieces[(color, Piece::King)].into_iter() {
             self.check_mask |= king::get_all_attacks(self, i);
         }
-        if (self.check_mask & BitBoard(1 << king_pos)) != BitBoard(0) {
+        if self.check_mask.has(king_pos) {
             king::calc_king_attacker_masks(self, king_pos);
             self.king_attacker_count = self.king_attacker_mask.count_set_bits();
         } else {
@@ -352,26 +349,26 @@ impl Board {
         match mov.flag {
             3 => {
                 if side_to_play == Color::White {
-                    self.clear_bit(7 + 0 * 8, Piece::Rook, Color::White);
-                    self.set(5 + 0 * 8, Piece::Rook, Color::White);
+                    self.clear_bit(Position::new(0, 7), Piece::Rook, Color::White);
+                    self.set(Position::new(0, 5), Piece::Rook, Color::White);
                     self.remove_castling_right(Color::White, false);
                     self.remove_castling_right(Color::White, true);
                 } else {
-                    self.clear_bit(7 + 7 * 8, Piece::Rook, Color::Black);
-                    self.set(5 + 7 * 8, Piece::Rook, Color::Black);
+                    self.clear_bit(Position::new(7, 7), Piece::Rook, Color::Black);
+                    self.set(Position::new(7, 5), Piece::Rook, Color::Black);
                     self.remove_castling_right(Color::Black, false);
                     self.remove_castling_right(Color::Black, true);
                 }
             }
             4 => {
                 if side_to_play == Color::White {
-                    self.clear_bit(0 + 0 * 8, Piece::Rook, Color::White);
-                    self.set(3 + 0 * 8, Piece::Rook, Color::White);
+                    self.clear_bit(Position::new(0, 0), Piece::Rook, Color::White);
+                    self.set(Position::new(0, 3), Piece::Rook, Color::White);
                     self.remove_castling_right(Color::White, false);
                     self.remove_castling_right(Color::White, true);
                 } else {
-                    self.clear_bit(0 + 7 * 8, Piece::Rook, Color::Black);
-                    self.set(3 + 7 * 8, Piece::Rook, Color::Black);
+                    self.clear_bit(Position::new(7, 0), Piece::Rook, Color::Black);
+                    self.set(Position::new(7, 3), Piece::Rook, Color::Black);
                     self.remove_castling_right(Color::Black, false);
                     self.remove_castling_right(Color::Black, true);
                 }
@@ -386,10 +383,14 @@ impl Board {
         if mov.flag == 1 {
             // move is en passant
             // TODO: better and more efficient board.clear_field to avoid use of board.get here
-            self.clear_bit((mov.to % 8) + (mov.from / 8) * 8, Piece::Pawn, oponent_side);
+            self.clear_bit(
+                Position::new(mov.from.rank(), mov.to.file()),
+                Piece::Pawn,
+                oponent_side,
+            );
         } else if mov.flag == 2 {
             // move triggers en passant
-            self.set_en_passant((mov.to % 8) as u16);
+            self.set_en_passant(mov.to.file() as u16);
         }
 
         if p.0 == Piece::King {
@@ -406,15 +407,15 @@ impl Board {
             }
         } else if p.0 == Piece::Rook {
             if side_to_play == Color::White {
-                if mov.from == 0 + 0 * 8 {
+                if mov.from == Position::new(0, 0) {
                     self.remove_castling_right(Color::White, true);
-                } else if mov.from == 7 + 0 * 8 {
+                } else if mov.from == Position::new(0, 7) {
                     self.remove_castling_right(Color::White, false);
                 }
             } else {
-                if mov.from == 0 + 7 * 8 {
+                if mov.from == Position::new(7, 0) {
                     self.remove_castling_right(Color::Black, true);
-                } else if mov.from == 7 + 7 * 8 {
+                } else if mov.from == Position::new(7, 7) {
                     self.remove_castling_right(Color::Black, false);
                 }
             }

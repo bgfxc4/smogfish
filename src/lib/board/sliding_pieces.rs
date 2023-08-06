@@ -38,7 +38,7 @@ pub fn get_all_moves_sliding_pseudolegal(
         return;
     }
 
-    let is_pinned = board.pinned_pieces & BitBoard(1 << pos) != BitBoard(0);
+    let is_pinned = board.pinned_pieces.has(pos);
     // if king is in check, no pinned piece has a legal move
     if is_pinned && board.king_attacker_count != 0 {
         return;
@@ -47,12 +47,10 @@ pub fn get_all_moves_sliding_pseudolegal(
 
     for dir_idx in start_dir..end_dir {
         let dir = PRECOMPUTED_LOOKUPS.DIRECTION_OFFSETS[dir_idx as usize] as i8;
-        for n in 0..PRECOMPUTED_LOOKUPS.NUM_SQUARES_TO_EDGE[pos as usize][dir_idx] {
-            let target_square = (pos as i8 + dir * (n + 1)) as u8;
+        for n in 0..PRECOMPUTED_LOOKUPS.NUM_SQUARES_TO_EDGE[pos.0 as usize][dir_idx] {
+            let target_square = Position((pos.0 as i8 + dir * (n + 1)) as u8);
             if board.king_attacker_count == 1
-                && (board.king_attacker_mask | board.king_attacker_block_mask)
-                    & BitBoard(1 << target_square)
-                    == BitBoard(0)
+                && !(board.king_attacker_mask | board.king_attacker_block_mask).has(target_square)
             {
                 if !board.tile_is_empty(target_square) {
                     break;
@@ -61,9 +59,7 @@ pub fn get_all_moves_sliding_pseudolegal(
                 }
             }
 
-            if is_pinned
-                && board.pinned_pieces_move_mask & BitBoard(1 << target_square) == BitBoard(0)
-            {
+            if is_pinned && !board.pinned_pieces_move_mask.has(target_square) {
                 break;
             }
 
@@ -95,9 +91,9 @@ pub fn get_all_attacks_sliding(
 
     for dir_idx in start_dir..end_dir {
         let dir = PRECOMPUTED_LOOKUPS.DIRECTION_OFFSETS[dir_idx as usize] as i8;
-        for n in 0..PRECOMPUTED_LOOKUPS.NUM_SQUARES_TO_EDGE[pos as usize][dir_idx] {
-            let target_square = (pos as i8 + dir * (n + 1)) as u8;
-            ret |= BitBoard(1 << target_square);
+        for n in 0..PRECOMPUTED_LOOKUPS.NUM_SQUARES_TO_EDGE[pos.0 as usize][dir_idx] {
+            let target_square = Position((pos.0 as i8 + dir * (n + 1)) as u8);
+            ret += target_square;
 
             // stop search if there is a piece blocking the line, but continue if it is the enemy
             // king, because he should not be included in this search

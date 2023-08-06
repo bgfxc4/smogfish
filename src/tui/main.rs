@@ -1,12 +1,12 @@
 use colored::Colorize;
 use std::io;
 
-use smogfish::board::helper::{Color, GameState, Piece};
-use smogfish::board::{Board, Move, Position};
+use smogfish::board::helper::{Color, GameState, Piece, Position};
+use smogfish::board::{Board, Move};
 
 pub fn main() {
     let mut board_buffer: [String; 8] = Default::default();
-    let mut cursor_pos: Position = 3 + 1 * 8;
+    let mut cursor_pos: Position = Position::new(3, 1);
 
     let mut b = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     // let mut b = Board::new("R1K5/PP3q1r/2B5/8/8/5Q2/pp6/r5k1 b - - 0 1");
@@ -49,9 +49,9 @@ pub fn main() {
 
 fn fill_board_buffer(b: &Board, bb: &mut [String; 8]) {
     for row in (0..8).rev() {
-        bb[row] = "".to_string();
+        bb[row as usize] = "".to_string();
         for col in 0..8 {
-            let p = b.get_by_idx((row * 8 + col) as u8);
+            let p = b.get_by_idx(Position::new(row, col));
             let c = match p.0 {
                 Piece::Pawn => "p",
                 Piece::Knight => "n",
@@ -62,9 +62,9 @@ fn fill_board_buffer(b: &Board, bb: &mut [String; 8]) {
                 _ => ".",
             };
             if p.1 == Color::White {
-                bb[row].push_str(c.to_uppercase().as_str());
+                bb[row as usize].push_str(c.to_uppercase().as_str());
             } else {
-                bb[row].push_str(c);
+                bb[row as usize].push_str(c);
             }
         }
     }
@@ -78,13 +78,13 @@ fn print_board_buffer(bb: &[String; 8], cursor_pos: Position, possible_moves: &V
         let mut col = 0;
         for c in bb[row as usize].chars() {
             let mut to_print = c.to_string().normal();
-            if col + row * 8 == cursor_pos {
+            if Position::new(row, col) == cursor_pos {
                 to_print = to_print.bold().blue();
             }
 
             if possible_moves
                 .iter()
-                .position(|m| m.to == col + row * 8)
+                .position(|m| m.to == Position::new(row, col))
                 .is_some()
             {
                 to_print = to_print.red();
@@ -106,10 +106,10 @@ fn handle_input(
     possible_moves: &Vec<Move>,
 ) {
     match input.trim() {
-        "w" => *cursor_pos += 8,
-        "s" => *cursor_pos -= 8,
-        "d" => *cursor_pos += 1,
-        "a" => *cursor_pos -= 1,
+        "w" => cursor_pos.0 += 8,
+        "s" => cursor_pos.0 -= 8,
+        "d" => cursor_pos.0 += 1,
+        "a" => cursor_pos.0 -= 1,
         cmd => {
             let mut chars = cmd.chars().into_iter();
             let col = chars.nth(0);
@@ -124,7 +124,7 @@ fn handle_input(
                     + (row.unwrap().to_digit(10).unwrap() - 1) as u8 * 8;
                 let mov = possible_moves
                     .iter()
-                    .find(|&m| &m.from == cursor_pos && m.to == pos);
+                    .find(|&m| &m.from == cursor_pos && m.to == Position(pos));
                 match mov {
                     Some(m) => {
                         if m.flag >= 5 && m.flag <= 8 {

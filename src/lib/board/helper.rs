@@ -59,6 +59,20 @@ impl IndexMut<(Color, Piece)> for PieceBoards {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Position(pub u8);
+impl Position {
+    pub const fn new(rank: u8, file: u8) -> Self {
+        Self(file + rank * 8)
+    }
+    pub fn file(self) -> u8 {
+        self.0 % 8
+    }
+    pub fn rank(self) -> u8 {
+        self.0 / 8
+    }
+}
+
 pub struct GameState;
 impl GameState {
     pub const PLAYING: u8 = 0;
@@ -89,7 +103,7 @@ pub fn load_board_from_fen(board: &mut Board, fen: &str) -> Result<(), String> {
             col += n as u8;
             continue;
         }
-        let pos = col + 8 * row;
+        let pos = Position::new(row, col);
         #[rustfmt::skip] match c {
             '/' => {
                 col = 0;

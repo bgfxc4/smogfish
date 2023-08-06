@@ -8,12 +8,12 @@ pub fn get_all_moves(board: &mut Board, pos: Position) {
     if board.king_attacker_count > 1 {
         return;
     }
-    let is_pinned = board.pinned_pieces & BitBoard(1 << pos) != BitBoard(0);
+    let is_pinned = board.pinned_pieces.has(pos);
     if is_pinned {
         return;
     }
 
-    let mut attack_mask = PRECOMPUTED_LOOKUPS.KNIGHT_ATTACKS[pos as usize];
+    let mut attack_mask = PRECOMPUTED_LOOKUPS.KNIGHT_ATTACKS[pos.0 as usize];
 
     match board.current_player() {
         Color::White => attack_mask &= !board.white_total,
@@ -30,6 +30,6 @@ pub fn get_all_moves(board: &mut Board, pos: Position) {
 }
 
 pub fn get_all_attacks(_board: &Board, pos: Position) -> BitBoard {
-    let attack_mask = PRECOMPUTED_LOOKUPS.KNIGHT_ATTACKS[pos as usize];
+    let attack_mask = PRECOMPUTED_LOOKUPS.KNIGHT_ATTACKS[pos.0 as usize];
     attack_mask
 }

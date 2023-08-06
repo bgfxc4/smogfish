@@ -1,11 +1,30 @@
-use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, Mul, Not};
+use super::helper::Position;
+use std::ops::{AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, Mul, Not, SubAssign};
 
 #[derive(PartialEq, Eq, PartialOrd, Clone, Copy, Debug, Default, Hash)]
 pub struct BitBoard(pub u64);
 
+impl BitBoard {
+    #[inline(always)]
+    pub fn has(self, index: Position) -> bool {
+        (self & BitBoard(1 << index.0)) != BitBoard(0)
+    }
+}
+impl AddAssign<Position> for BitBoard {
+    #[inline(always)]
+    fn add_assign(&mut self, rhs: Position) {
+        self.0 |= 1 << rhs.0
+    }
+}
+impl SubAssign<Position> for BitBoard {
+    #[inline(always)]
+    fn sub_assign(&mut self, rhs: Position) {
+        self.0 &= !(1 << rhs.0)
+    }
+}
+
 impl BitAnd for BitBoard {
     type Output = BitBoard;
-
     #[inline]
     fn bitand(self, other: BitBoard) -> BitBoard {
         BitBoard(self.0 & other.0)
@@ -14,7 +33,6 @@ impl BitAnd for BitBoard {
 
 impl BitOr for BitBoard {
     type Output = BitBoard;
-
     #[inline]
     fn bitor(self, other: BitBoard) -> BitBoard {
         BitBoard(self.0 | other.0)
@@ -23,7 +41,6 @@ impl BitOr for BitBoard {
 
 impl Mul for BitBoard {
     type Output = BitBoard;
-
     #[inline]
     fn mul(self, other: Self) -> Self::Output {
         Self(self.0.wrapping_mul(other.0))
@@ -46,7 +63,6 @@ impl BitOrAssign for BitBoard {
 
 impl Not for BitBoard {
     type Output = BitBoard;
-
     #[inline]
     fn not(self) -> Self {
         BitBoard(!self.0)
@@ -80,7 +96,7 @@ impl BitBoard {
 
 pub struct BitBoardIter(pub u8, pub BitBoard);
 impl IntoIterator for BitBoard {
-    type Item = u8;
+    type Item = Position;
     type IntoIter = BitBoardIter;
     #[inline(always)]
     fn into_iter(self) -> Self::IntoIter {
@@ -88,7 +104,7 @@ impl IntoIterator for BitBoard {
     }
 }
 impl Iterator for BitBoardIter {
-    type Item = u8;
+    type Item = Position;
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         if self.1 .0 == 0 {
@@ -101,7 +117,7 @@ impl Iterator for BitBoardIter {
             } else {
                 self.1 .0 <<= sh;
             }
-            Some(self.0)
+            Some(Position(self.0))
         }
     }
 }
