@@ -256,31 +256,25 @@ impl Board {
     }
 
     fn generate_check_mask(&mut self, color: u8) { // color => enemy color
-        let enemy_side = if color == Sides::WHITE { Sides::BLACK } else { Sides::WHITE };
-        let mut king_pos: u8 = 0;
+        let king_pos: u8 = self.pieces[1 - color as usize][Pieces::KING as usize].into_iter().next().unwrap();
         self.check_mask = BitBoard(0);
-        for idx in 0..64 {
-            if !self.piece_color_on_tile(idx, color) {
-                if self.piece_is_type(idx, enemy_side, Pieces::KING) {
-                    king_pos = idx;
-                }
-                continue;
-            }
-
-            if self.piece_is_type(idx, color, Pieces::PAWN) {
-                self.check_mask |= pawn::get_all_attacks(self, idx);
-            } else if self.piece_is_type(idx, color, Pieces::KNIGHT) {
-                self.check_mask |= knight::get_all_attacks(self, idx);
-            } else if self.piece_is_type(idx, color, Pieces::BISHOP) {
-                self.check_mask |= sliding_pieces::get_all_attacks_bishop(self, idx, color);
-            } else if self.piece_is_type(idx, color, Pieces::ROOK) {
-                self.check_mask |= sliding_pieces::get_all_attacks_rook(self, idx, color);
-            } else if self.piece_is_type(idx, color, Pieces::QUEEN) {
-                self.check_mask |= sliding_pieces::get_all_attacks_queen(self, idx, color);
-            } else if self.piece_is_type(idx, color, Pieces::KING) {
-                self.check_mask |= king::get_all_attacks(self, idx);
-            }
-
+        for i in self.pieces[color as usize][Pieces::PAWN as usize].into_iter() {
+            self.check_mask |= pawn::get_all_attacks(self, i);
+        }
+        for i in self.pieces[color as usize][Pieces::KNIGHT as usize].into_iter() {
+            self.check_mask |= knight::get_all_attacks(self, i);
+        }
+        for i in self.pieces[color as usize][Pieces::BISHOP as usize].into_iter() {
+            self.check_mask |= sliding_pieces::get_all_attacks_bishop(self, i, color);
+        }
+        for i in self.pieces[color as usize][Pieces::ROOK as usize].into_iter() {
+            self.check_mask |= sliding_pieces::get_all_attacks_rook(self, i, color);
+        }
+        for i in self.pieces[color as usize][Pieces::QUEEN as usize].into_iter() {
+            self.check_mask |= sliding_pieces::get_all_attacks_queen(self, i, color);
+        }
+        for i in self.pieces[color as usize][Pieces::KING as usize].into_iter() {
+            self.check_mask |= king::get_all_attacks(self, i);
         }
         if (self.check_mask & BitBoard(1 << king_pos)) != BitBoard(0) {
             king::calc_king_attacker_masks(self, king_pos);
