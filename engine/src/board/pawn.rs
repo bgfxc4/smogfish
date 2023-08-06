@@ -60,8 +60,8 @@ pub fn get_all_moves_pseudolegal(board: &mut Board, pos: Position) {
     for (file, dir) in [(7, 1), (0, -1)] {
         if pos.file() != file {
             let p = Position((pos.0 as i8 + 8 * modi + dir) as u8);
-            if board.king_attacker_count != 1
-                || attacker_and_block_mask.has(p)
+            if (board.king_attacker_count != 1
+                || attacker_and_block_mask.has(p))
                     && (!is_pinned || board.pinned_pieces_move_mask.has(p))
             {
                 if board.piece_color_on_tile(p, enemy_side) && !board.tile_is_empty(p) {

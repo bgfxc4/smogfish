@@ -98,7 +98,7 @@ pub fn get_all_attacks_sliding(
             // stop search if there is a piece blocking the line, but continue if it is the enemy
             // king, because he should not be included in this search
             if !board.tile_is_empty(target_square)
-                && !board.piece_is_type(target_square, color, Piece::King)
+                && !board.piece_is_type(target_square, !color, Piece::King)
             {
                 break;
             }
