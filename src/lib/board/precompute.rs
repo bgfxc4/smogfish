@@ -1,6 +1,5 @@
 use super::BitBoard;
 use crate::board::helper::Color;
-use rand::random;
 use std::sync::LazyLock;
 
 pub const DIRECTION_OFFSETS: [i8; 8] = [8, -8, -1, 1, 7, -7, 9, -9];
@@ -112,16 +111,37 @@ const fn king_castle_checks() -> [[BitBoard; 2]; 2] {
     ]
 }
 
-fn zobrist_hash_table() -> [[u64; 12]; 64] {
+const fn xorshift(mut x: u64) -> u64 {
+    x ^= x << 13;
+    x ^= x >> 7;
+    x ^= x << 17;
+    return x;
+}
+
+const fn zobrist_hash_table() -> [[u64; 12]; 64] {
     let mut ret = [[0; 12]; 64];
-    for i in 0..64 {
-        for p in 0..12 {
-            ret[i][p] = random();
-        }
-    }
+    let mut x = 31415;
+    const_for!(for _x in 0..10 {
+        x = xorshift(x)
+    });
+    const_for!(for i in 0..64 {
+        const_for!(for p in 0..12 {
+            x = xorshift(x);
+            ret[i][p] = x;
+        })
+    });
     ret
 }
 
-fn zobrist_special_keys() -> [u64; 5] {
-    [random(), random(), random(), random(), random()]
+const fn zobrist_special_keys() -> [u64; 5] {
+    let mut ret = [0; 5];
+    let mut x = 31415;
+    const_for!(for _x in 0..80 {
+        x = xorshift(x)
+    });
+    const_for!(for i in 0..5 {
+        x = xorshift(x);
+        ret[i] = x;
+    });
+    ret
 }
