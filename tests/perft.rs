@@ -23,7 +23,7 @@ fn perft(depth: u8, b: Board) -> u64 {
         let n = perft(depth - 1, b_);
         nodes += n;
         if depth == 4 {
-            println!("move {} {} to {} {}, {} nodes", m.from.col, m.from.row, m.to.col, m.to.row, n);
+            println!("move {} {} to {} {}, {} nodes", m.from%8, m.from/8, m.to%8, m.to/8, n);
         }
     }
     nodes

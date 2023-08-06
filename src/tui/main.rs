@@ -6,7 +6,7 @@ use smogfish::board::helper::{Sides, Pieces, GameState};
 
 pub fn main() {
     let mut board_buffer: [String; 8] = ["".to_string(), "".to_string(), "".to_string(), "".to_string(), "".to_string(), "".to_string(), "".to_string(), "".to_string()];
-    let mut cursor_pos: Position = Position::new(3, 1);
+    let mut cursor_pos: Position = 3+1*8;
      
     let mut b = Board::new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     // let mut b = Board::new("R1K5/PP3q1r/2B5/8/8/5Q2/pp6/r5k1 b - - 0 1");
@@ -31,11 +31,11 @@ pub fn main() {
         fill_board_buffer(&b, &mut board_buffer);
 
         let mut possible_moves: Vec<Move> = vec![];
-        if (b.get(&cursor_pos).1 == Sides::WHITE) == b.is_white_to_play() {
-            get_possible_moves(&b, &cursor_pos, &mut possible_moves);
+        if (b.get_by_idx(cursor_pos).1 == Sides::WHITE) == b.is_white_to_play() {
+            get_possible_moves(&b, cursor_pos, &mut possible_moves);
         }
 
-        print_board_buffer(&board_buffer, &cursor_pos, &possible_moves);
+        print_board_buffer(&board_buffer, cursor_pos, &possible_moves);
 
         let mut input = String::new();
         match io::stdin().read_line(&mut input) {
@@ -51,7 +51,7 @@ fn fill_board_buffer(b: &Board, bb: &mut [String; 8]) {
     for row in (0..8).rev() {
         bb[row] =  "".to_string();
         for col in 0..8 {
-            let p = b.get(&Position::new(col, row as u8));
+            let p = b.get_by_idx((row*8+col) as u8);
             let c = match p.0 {
                 Pieces::PAWN => "p",
                 Pieces::KNIGHT => "n",
@@ -70,7 +70,7 @@ fn fill_board_buffer(b: &Board, bb: &mut [String; 8]) {
     }
 }
 
-fn print_board_buffer(bb: &[String; 8], cursor_pos: &Position, possible_moves: &Vec<Move>) {
+fn print_board_buffer(bb: &[String; 8], cursor_pos: Position, possible_moves: &Vec<Move>) {
     println!("   a b c d e f g h");
     println!("   ―――――――――――――――");
     for row in (0..8).rev() {
@@ -78,11 +78,11 @@ fn print_board_buffer(bb: &[String; 8], cursor_pos: &Position, possible_moves: &
         let mut col = 0;
         for c in bb[row as usize].chars() {
             let mut to_print = c.to_string().normal();
-            if col == cursor_pos.col && row == cursor_pos.row {
+            if col+row*8 == cursor_pos {
                 to_print = to_print.bold().blue();
             }
             
-            if possible_moves.iter().position(|m| m.to == Position::new(col, row)).is_some() {
+            if possible_moves.iter().position(|m| m.to == col+row*8).is_some() {
                 to_print = to_print.red();
             }
 
@@ -97,16 +97,16 @@ fn print_board_buffer(bb: &[String; 8], cursor_pos: &Position, possible_moves: &
 
 fn handle_input(board: &mut Board, input: &String, cursor_pos: &mut Position, possible_moves: &Vec<Move>) {
     match input.trim() {
-        "w" => cursor_pos.row += 1,
-        "s" => cursor_pos.row -= 1,
-        "d" => cursor_pos.col += 1,
-        "a" => cursor_pos.col -= 1,
+        "w" => *cursor_pos += 8,
+        "s" => *cursor_pos -= 8,
+        "d" => *cursor_pos += 1,
+        "a" => *cursor_pos -= 1,
         cmd => {
             let mut chars = cmd.chars().into_iter();
             let col = chars.nth(0);
             let row = chars.nth(0);
             if row.is_some() && chars.count() == 0 && (col.unwrap().is_ascii()) && (row.unwrap().is_digit(10)) { // position got entered
-                let pos = Position::new((col.unwrap() as u32 - 97) as u8, (row.unwrap().to_digit(10).unwrap() - 1) as u8);
+                let pos = (col.unwrap() as u32 - 97) as u8 + (row.unwrap().to_digit(10).unwrap() - 1) as u8 * 8;
                 let mov = possible_moves.iter().find(|&m| &m.from == cursor_pos && m.to == pos);
                 match mov {
                     Some(m) => {
@@ -133,10 +133,10 @@ fn make_promotion_move(board: &mut Board, mov: &Move) {
     match io::stdin().read_line(&mut input) {
         Ok(_) => {
             match input.chars().nth(0) {
-                Some('Q') => board.make_move(&Move::new_with_flags(&mov.from, &mov.to, 5)),
-                Some('R') => board.make_move(&Move::new_with_flags(&mov.from, &mov.to, 6)),
-                Some('B') => board.make_move(&Move::new_with_flags(&mov.from, &mov.to, 7)),
-                Some('K') => board.make_move(&Move::new_with_flags(&mov.from, &mov.to, 8)),
+                Some('Q') => board.make_move(&Move::new_with_flags(mov.from, mov.to, 5)),
+                Some('R') => board.make_move(&Move::new_with_flags(mov.from, mov.to, 6)),
+                Some('B') => board.make_move(&Move::new_with_flags(mov.from, mov.to, 7)),
+                Some('K') => board.make_move(&Move::new_with_flags(mov.from, mov.to, 8)),
                 _ => println!("Not a valid promotion"),
             }
         }
@@ -144,6 +144,6 @@ fn make_promotion_move(board: &mut Board, mov: &Move) {
     }
 }
 
-fn get_possible_moves(b: &Board, cursor_pos: &Position, possible_moves: &mut Vec<Move>) {
+fn get_possible_moves(b: &Board, cursor_pos: Position, possible_moves: &mut Vec<Move>) {
     possible_moves.append(&mut b.get_all_possible_moves(cursor_pos));
 }

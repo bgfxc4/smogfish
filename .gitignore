@@ -1,2 +1,5 @@
 /target
+/target_perf
 notes_to_improve
+flamegraph.svg
+perf.*
