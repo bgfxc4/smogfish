@@ -1,6 +1,6 @@
-use std::cmp;
-use rand::Rng;
 use crate::board::helper::Sides;
+use rand::Rng;
+use std::cmp;
 
 use super::BitBoard;
 
@@ -30,13 +30,13 @@ pub struct PrecomputedLookups {
 fn precompute_num_squares_to_edge() -> [[i8; 8]; 64] {
     println!("Precomputing num squares to edge...");
     let mut ret = [[0 as i8; 8]; 64];
-    for col in 0 .. 8 {
-        for row in 0 .. 8 {
+    for col in 0..8 {
+        for row in 0..8 {
             let up: i8 = 7 - row;
             let down: i8 = row;
             let left: i8 = col;
             let right: i8 = 7 - col;
-            ret[(row*8+col) as usize] = [
+            ret[(row * 8 + col) as usize] = [
                 up,
                 down,
                 left,
@@ -58,7 +58,7 @@ fn precompute_knight_attacks() -> [BitBoard; 64] {
 
     for row in 0..8 as i8 {
         for col in 0..8 as i8 {
-            let square_idx = row*8 + col;
+            let square_idx = row * 8 + col;
             let possible_attacks = [
                 (row + 2, col + 1),
                 (row + 2, col - 1),
@@ -73,10 +73,10 @@ fn precompute_knight_attacks() -> [BitBoard; 64] {
                 if p.0 > 7 || p.0 < 0 || p.1 > 7 || p.1 < 0 {
                     continue;
                 }
-                ret[square_idx as usize] |= BitBoard(1 << (p.0*8 + p.1));
+                ret[square_idx as usize] |= BitBoard(1 << (p.0 * 8 + p.1));
             }
-        } 
-    } 
+        }
+    }
     println!("Done!");
     ret
 }
@@ -87,7 +87,7 @@ fn precompute_king_pawn_attacks() -> [[BitBoard; 64]; 2] {
 
     for row in 0..8 as i8 {
         for col in 0..8 as i8 {
-            let square_idx = row*8 + col;
+            let square_idx = row * 8 + col;
             let possible_attacks = [
                 (row + 1, col + 1, Sides::WHITE),
                 (row + 1, col - 1, Sides::WHITE),
@@ -98,7 +98,7 @@ fn precompute_king_pawn_attacks() -> [[BitBoard; 64]; 2] {
                 if p.0 > 7 || p.0 < 0 || p.1 > 7 || p.1 < 0 {
                     continue;
                 }
-                ret[p.2 as usize][square_idx as usize] |= BitBoard(1 << (p.0*8 + p.1));
+                ret[p.2 as usize][square_idx as usize] |= BitBoard(1 << (p.0 * 8 + p.1));
             }
         }
     }
@@ -108,14 +108,8 @@ fn precompute_king_pawn_attacks() -> [[BitBoard; 64]; 2] {
 
 fn precompute_king_castle_checks() -> [[BitBoard; 2]; 2] {
     [
-        [
-            BitBoard(96),
-            BitBoard(12),
-        ],
-        [
-            BitBoard(6917529027641081856),
-            BitBoard(864691128455135232),
-        ],
+        [BitBoard(96), BitBoard(12)],
+        [BitBoard(6917529027641081856), BitBoard(864691128455135232)],
     ]
 }
 

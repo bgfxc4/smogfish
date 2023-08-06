@@ -1,4 +1,4 @@
-use super::{Board, BitBoard, Position};
+use super::{BitBoard, Board};
 
 pub struct Sides;
 impl Sides {
@@ -47,8 +47,8 @@ pub fn load_board_from_fen(board: &mut Board, fen: &str) -> Result<(), String> {
             col += n as u8;
             continue;
         }
-        let pos = col+8*row;
-        match c {
+        let pos = col + 8 * row;
+        #[rustfmt::skip] match c {
             '/' => {
                 col = 0;
                 row -= 1;
@@ -66,14 +66,14 @@ pub fn load_board_from_fen(board: &mut Board, fen: &str) -> Result<(), String> {
             'q' => { board.set(pos, Pieces::QUEEN, Sides::BLACK); col += 1 },
             'k' => { board.set(pos, Pieces::KING, Sides::BLACK); col += 1 },
             _ => return Err("FEN parse error: illegal symbol in group 1".to_string())
-        } 
+        }
     }
 
     // second group: active color
     match groups[1] {
         "w" => board.set_color_to_move(Sides::WHITE),
         "b" => board.set_color_to_move(Sides::BLACK),
-        _ => return Err("FEN parse error: illegal symbol in group 2".to_string())
+        _ => return Err("FEN parse error: illegal symbol in group 2".to_string()),
     }
 
     // third group: castling rights
@@ -84,7 +84,7 @@ pub fn load_board_from_fen(board: &mut Board, fen: &str) -> Result<(), String> {
                 'Q' => board.set_castling_right(Sides::WHITE, true),
                 'k' => board.set_castling_right(Sides::BLACK, false),
                 'q' => board.set_castling_right(Sides::BLACK, true),
-                _ => return Err("FEN parse error: illegal symbol in group 3".to_string())
+                _ => return Err("FEN parse error: illegal symbol in group 3".to_string()),
             }
         }
     }
@@ -93,7 +93,7 @@ pub fn load_board_from_fen(board: &mut Board, fen: &str) -> Result<(), String> {
     if groups[3] != "-" {
         let c = groups[3].chars().next().unwrap() as u32 - 97; // a -> 0; h -> 7
         if c > 7 {
-            return Err("FEN parse error: illegal symbol in group 4".to_string())
+            return Err("FEN parse error: illegal symbol in group 4".to_string());
         }
         board.set_en_passant(c as u16);
     }
@@ -102,20 +102,23 @@ pub fn load_board_from_fen(board: &mut Board, fen: &str) -> Result<(), String> {
     let half_moves = groups[4].parse::<u8>();
     match half_moves {
         Ok(num) => board.half_moves = num,
-        Err(_) => return Err("FEN parse error: illegal symbol in group 5".to_string())
+        Err(_) => return Err("FEN parse error: illegal symbol in group 5".to_string()),
     }
-
 
     // sixth group: full moves
     let full_moves = groups[5].parse::<u16>();
     match full_moves {
         Ok(num) => board.full_moves = num,
-        Err(_) => return Err("FEN parse error: illegal symbol in group 6".to_string())
+        Err(_) => return Err("FEN parse error: illegal symbol in group 6".to_string()),
     }
 
     board.generate_total_bitboard(Sides::WHITE);
     board.generate_total_bitboard(Sides::BLACK);
-    board.generate_check_mask(if board.is_white_to_play() { Sides::BLACK } else { Sides::WHITE });
+    board.generate_check_mask(if board.is_white_to_play() {
+        Sides::BLACK
+    } else {
+        Sides::WHITE
+    });
 
     board.generate_move_list();
 

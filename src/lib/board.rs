@@ -1,14 +1,14 @@
-pub mod helper;
 pub mod bitboard;
-pub mod pawn;
-pub mod sliding_pieces;
-pub mod knight;
+pub mod helper;
 pub mod king;
+pub mod knight;
+pub mod pawn;
 pub mod precompute;
-use helper::{Sides, Pieces};
-use bitboard::BitBoard;
+pub mod sliding_pieces;
 
-use self::{precompute::PRECOMPUTED_LOOKUPS, helper::GameState};
+use self::{helper::GameState, precompute::PRECOMPUTED_LOOKUPS};
+use bitboard::BitBoard;
+use helper::{Pieces, Sides};
 
 pub type Position = u8;
 
@@ -21,11 +21,11 @@ pub struct Move {
 
 impl Move {
     pub fn new(from: Position, to: Position) -> Self {
-        Move{from, to, flag: 0}
+        Move { from, to, flag: 0 }
     }
 
     pub fn new_with_flags(from: Position, to: Position, flag: u8) -> Self {
-        Move{from, to, flag}
+        Move { from, to, flag }
     }
 }
 
@@ -36,31 +36,32 @@ pub struct Board {
     white_total: BitBoard,
     black_total: BitBoard,
     check_mask: BitBoard, // marks every square, where a piece of the player, who just made a move
-                          // is attacking. This bitboard ignores the king of the player whos turn
-                          // it is
+    // is attacking. This bitboard ignores the king of the player whos turn
+    // it is
     king_attacker_count: u8,
     king_attacker_mask: BitBoard,
     king_attacker_block_mask: BitBoard,
     pinned_pieces: BitBoard,
     pinned_pieces_move_mask: BitBoard,
     en_passant_pinned_piece: u8, // stores, if a pawn can not take en passant. This can only be one
-                                 // pawn at once and the tile index of it is stored here.
-                                 // 65 -> empty
+    // pawn at once and the tile index of it is stored here.
+    // 65 -> empty
     flags: u16, // side_to_play,
-                // white_castle_short, white_castle_long, black_castle_short, black_castle_long
-                // (all 1 bit)
-                // en_passant_pos (4 bit number, 0-7, side is clear by active color, 15 (1111b) to
-                // signal no en passant)
+    // white_castle_short, white_castle_long, black_castle_short, black_castle_long
+    // (all 1 bit)
+    // en_passant_pos (4 bit number, 0-7, side is clear by active color, 15 (1111b) to
+    // signal no en passant)
     half_moves: u8, // for fifty move rule
     full_moves: u16,
-    zobrist_history: [u64; 101], // for threefold repetition, indexed by halfmoves 
+    zobrist_history: [u64; 101], // for threefold repetition, indexed by halfmoves
     pub move_list: Vec<Move>,
 }
 
 impl Board {
-    pub fn new(fen: &str) ->Self {
+    pub fn new(fen: &str) -> Self {
         lazy_static::initialize(&precompute::PRECOMPUTED_LOOKUPS);
-        let mut b: Self = Board { pieces: [[BitBoard(0); 6]; 2],
+        let mut b: Self = Board {
+            pieces: [[BitBoard(0); 6]; 2],
             game_state: GameState::PLAYING,
             white_total: BitBoard(0),
             black_total: BitBoard(0),
@@ -92,12 +93,20 @@ impl Board {
 
     #[inline]
     pub fn piece_color_on_tile(&self, idx: Position, color: u8) -> bool {
-        if color == Sides::WHITE { self.white_total & BitBoard(1 << idx) != BitBoard(0) } else { self.black_total & BitBoard(1 << idx) != BitBoard(0) }
+        if color == Sides::WHITE {
+            self.white_total & BitBoard(1 << idx) != BitBoard(0)
+        } else {
+            self.black_total & BitBoard(1 << idx) != BitBoard(0)
+        }
     }
 
     #[inline]
     pub fn piece_is_sliding(&self, idx: Position, color: u8) -> bool {
-        (self.pieces[color as usize][Pieces::QUEEN as usize] | self.pieces[color as usize][Pieces::ROOK as usize] | self.pieces[color as usize][Pieces::BISHOP as usize]) & BitBoard(1 << idx) != BitBoard(0)
+        (self.pieces[color as usize][Pieces::QUEEN as usize]
+            | self.pieces[color as usize][Pieces::ROOK as usize]
+            | self.pieces[color as usize][Pieces::BISHOP as usize])
+            & BitBoard(1 << idx)
+            != BitBoard(0)
     }
 
     #[inline]
@@ -105,8 +114,9 @@ impl Board {
         self.pieces[color as usize][piece as usize] & BitBoard(1 << idx) != BitBoard(0)
     }
 
-    pub fn get_by_idx(&self, idx: Position) -> (u8, u8) { // dont use in engine, only for showing
-                                                         // the board, not really efficient
+    pub fn get_by_idx(&self, idx: Position) -> (u8, u8) {
+        // dont use in engine, only for showing
+        // the board, not really efficient
         if self.white_total & BitBoard(1 << idx) != BitBoard(0) {
             for p in 0..6 {
                 if self.pieces[Sides::WHITE as usize][p] & BitBoard(1 << idx) != BitBoard(0) {
@@ -230,15 +240,25 @@ impl Board {
     pub fn generate_move_list(&mut self) {
         self.move_list.clear();
         let mut move_list: Vec<Move> = vec![];
-        let side_to_play = if self.is_white_to_play() { Sides::WHITE } else { Sides::BLACK };
+        let side_to_play = if self.is_white_to_play() {
+            Sides::WHITE
+        } else {
+            Sides::BLACK
+        };
         for p in 0..6 {
             for i in self.pieces[side_to_play as usize][p] {
                 match p as u8 {
                     Pieces::PAWN => pawn::get_all_moves_pseudolegal(self, i, &mut move_list),
                     Pieces::KNIGHT => knight::get_all_moves(self, i, &mut move_list),
-                    Pieces::BISHOP => sliding_pieces::get_all_moves_bishop_pseudolegal(self, i, &mut move_list),
-                    Pieces::ROOK => sliding_pieces::get_all_moves_rook_pseudolegal(self, i, &mut move_list),
-                    Pieces::QUEEN => sliding_pieces::get_all_moves_queen_pseudolegal(self, i, &mut move_list),
+                    Pieces::BISHOP => {
+                        sliding_pieces::get_all_moves_bishop_pseudolegal(self, i, &mut move_list)
+                    }
+                    Pieces::ROOK => {
+                        sliding_pieces::get_all_moves_rook_pseudolegal(self, i, &mut move_list)
+                    }
+                    Pieces::QUEEN => {
+                        sliding_pieces::get_all_moves_queen_pseudolegal(self, i, &mut move_list)
+                    }
                     Pieces::KING => king::get_all_moves_pseudolegal(self, i, &mut move_list),
                     _ => (),
                 };
@@ -249,14 +269,28 @@ impl Board {
 
     fn generate_total_bitboard(&mut self, color: u8) {
         if color == Sides::WHITE {
-            self.white_total = self.pieces[Sides::WHITE as usize][Pieces::PAWN as usize] | self.pieces[Sides::WHITE as usize][Pieces::KNIGHT as usize] | self.pieces[Sides::WHITE as usize][Pieces::BISHOP as usize] | self.pieces[Sides::WHITE as usize][Pieces::ROOK as usize] | self.pieces[Sides::WHITE as usize][Pieces::QUEEN as usize] | self.pieces[Sides::WHITE as usize][Pieces::KING as usize];
+            self.white_total = self.pieces[Sides::WHITE as usize][Pieces::PAWN as usize]
+                | self.pieces[Sides::WHITE as usize][Pieces::KNIGHT as usize]
+                | self.pieces[Sides::WHITE as usize][Pieces::BISHOP as usize]
+                | self.pieces[Sides::WHITE as usize][Pieces::ROOK as usize]
+                | self.pieces[Sides::WHITE as usize][Pieces::QUEEN as usize]
+                | self.pieces[Sides::WHITE as usize][Pieces::KING as usize];
         } else {
-            self.black_total = self.pieces[Sides::BLACK as usize][Pieces::PAWN as usize] | self.pieces[Sides::BLACK as usize][Pieces::KNIGHT as usize] | self.pieces[Sides::BLACK as usize][Pieces::BISHOP as usize] | self.pieces[Sides::BLACK as usize][Pieces::ROOK as usize] | self.pieces[Sides::BLACK as usize][Pieces::QUEEN as usize] | self.pieces[Sides::BLACK as usize][Pieces::KING as usize];
+            self.black_total = self.pieces[Sides::BLACK as usize][Pieces::PAWN as usize]
+                | self.pieces[Sides::BLACK as usize][Pieces::KNIGHT as usize]
+                | self.pieces[Sides::BLACK as usize][Pieces::BISHOP as usize]
+                | self.pieces[Sides::BLACK as usize][Pieces::ROOK as usize]
+                | self.pieces[Sides::BLACK as usize][Pieces::QUEEN as usize]
+                | self.pieces[Sides::BLACK as usize][Pieces::KING as usize];
         }
     }
 
-    fn generate_check_mask(&mut self, color: u8) { // color => enemy color
-        let king_pos: u8 = self.pieces[1 - color as usize][Pieces::KING as usize].into_iter().next().unwrap();
+    fn generate_check_mask(&mut self, color: u8) {
+        // color => enemy color
+        let king_pos: u8 = self.pieces[1 - color as usize][Pieces::KING as usize]
+            .into_iter()
+            .next()
+            .unwrap();
         self.check_mask = BitBoard(0);
         for i in self.pieces[color as usize][Pieces::PAWN as usize].into_iter() {
             self.check_mask |= pawn::get_all_attacks(self, i);
@@ -297,8 +331,11 @@ impl Board {
         let p = self.get_by_idx(mov.from);
         let target_piece = self.get_by_idx(mov.to);
         let move_is_capture = target_piece.0 != Pieces::EMPTY;
-        let (side_to_play, oponent_side) = if self.is_white_to_play() { (Sides::WHITE, Sides::BLACK) } else { (Sides::BLACK, Sides::WHITE) };
-
+        let (side_to_play, oponent_side) = if self.is_white_to_play() {
+            (Sides::WHITE, Sides::BLACK)
+        } else {
+            (Sides::BLACK, Sides::WHITE)
+        };
 
         self.clear_bit(mov.from, p.0, side_to_play);
         if move_is_capture {
@@ -310,63 +347,73 @@ impl Board {
         match mov.flag {
             3 => {
                 if side_to_play == Sides::WHITE {
-                    self.clear_bit(7+0*8, Pieces::ROOK, Sides::WHITE);
-                    self.set(5+0*8, Pieces::ROOK, Sides::WHITE);
+                    self.clear_bit(7 + 0 * 8, Pieces::ROOK, Sides::WHITE);
+                    self.set(5 + 0 * 8, Pieces::ROOK, Sides::WHITE);
                     self.remove_castling_right(Sides::WHITE, false);
                     self.remove_castling_right(Sides::WHITE, true);
                 } else {
-                    self.clear_bit(7+7*8, Pieces::ROOK, Sides::BLACK);
-                    self.set(5+7*8, Pieces::ROOK, Sides::BLACK);
+                    self.clear_bit(7 + 7 * 8, Pieces::ROOK, Sides::BLACK);
+                    self.set(5 + 7 * 8, Pieces::ROOK, Sides::BLACK);
                     self.remove_castling_right(Sides::BLACK, false);
                     self.remove_castling_right(Sides::BLACK, true);
                 }
-            },
+            }
             4 => {
                 if side_to_play == Sides::WHITE {
-                    self.clear_bit(0+0*8, Pieces::ROOK, Sides::WHITE);
-                    self.set(3+0*8, Pieces::ROOK, Sides::WHITE);
+                    self.clear_bit(0 + 0 * 8, Pieces::ROOK, Sides::WHITE);
+                    self.set(3 + 0 * 8, Pieces::ROOK, Sides::WHITE);
                     self.remove_castling_right(Sides::WHITE, false);
                     self.remove_castling_right(Sides::WHITE, true);
                 } else {
-                    self.clear_bit(0+7*8, Pieces::ROOK, Sides::BLACK);
-                    self.set(3+7*8, Pieces::ROOK, Sides::BLACK);
+                    self.clear_bit(0 + 7 * 8, Pieces::ROOK, Sides::BLACK);
+                    self.set(3 + 7 * 8, Pieces::ROOK, Sides::BLACK);
                     self.remove_castling_right(Sides::BLACK, false);
                     self.remove_castling_right(Sides::BLACK, true);
                 }
-            },
+            }
             5 => self.set(mov.to, Pieces::QUEEN, p.1), // if promotion, set new piece on target instead of old one
             6 => self.set(mov.to, Pieces::ROOK, p.1),
             7 => self.set(mov.to, Pieces::BISHOP, p.1),
             8 => self.set(mov.to, Pieces::KNIGHT, p.1),
             _ => (),
-        } 
+        }
 
-        if mov.flag == 1 { // move is en passant
+        if mov.flag == 1 {
+            // move is en passant
             // TODO: better and more efficient board.clear_field to avoid use of board.get here
-            self.clear_bit((mov.to%8)+(mov.from/8)*8, Pieces::PAWN, oponent_side);
-        } else if mov.flag == 2 { // move triggers en passant
-            self.set_en_passant((mov.to%8) as u16);
+            self.clear_bit(
+                (mov.to % 8) + (mov.from / 8) * 8,
+                Pieces::PAWN,
+                oponent_side,
+            );
+        } else if mov.flag == 2 {
+            // move triggers en passant
+            self.set_en_passant((mov.to % 8) as u16);
         }
 
         if p.0 == Pieces::KING {
-            if side_to_play == Sides::WHITE && (self.castle_white_short() || self.castle_white_long()) {
+            if side_to_play == Sides::WHITE
+                && (self.castle_white_short() || self.castle_white_long())
+            {
                 self.remove_castling_right(Sides::WHITE, false);
                 self.remove_castling_right(Sides::WHITE, true);
-            } else if side_to_play == Sides::BLACK && (self.castle_black_short() || self.castle_black_long()) {
+            } else if side_to_play == Sides::BLACK
+                && (self.castle_black_short() || self.castle_black_long())
+            {
                 self.remove_castling_right(Sides::BLACK, false);
                 self.remove_castling_right(Sides::BLACK, true);
             }
         } else if p.0 == Pieces::ROOK {
             if side_to_play == Sides::WHITE {
-                if mov.from == 0+0*8{
+                if mov.from == 0 + 0 * 8 {
                     self.remove_castling_right(Sides::WHITE, true);
-                } else if mov.from== 7+0*8 {
+                } else if mov.from == 7 + 0 * 8 {
                     self.remove_castling_right(Sides::WHITE, false);
                 }
             } else {
-                if mov.from == 0+7*8 {
+                if mov.from == 0 + 7 * 8 {
                     self.remove_castling_right(Sides::BLACK, true);
-                } else if mov.from == 7+7*8 {
+                } else if mov.from == 7 + 7 * 8 {
                     self.remove_castling_right(Sides::BLACK, false);
                 }
             }
@@ -374,7 +421,7 @@ impl Board {
 
         if (p.0 != Pieces::PAWN) && !move_is_capture {
             self.half_moves += 1;
-            
+
             if self.half_moves >= 100 {
                 self.game_state = GameState::DRAW;
             }
@@ -394,8 +441,9 @@ impl Board {
         } else {
             self.half_moves = 0;
             self.zobrist_history = [0; 101];
-            if mov.flag == 2 { // if the new position includes a possible en passant, dont add it
-                               // to the zobrist history
+            if mov.flag == 2 {
+                // if the new position includes a possible en passant, dont add it
+                // to the zobrist history
                 self.zobrist_history[0] = 0;
             } else {
                 self.zobrist_history[0] = self.compute_zobrist_hash();
@@ -408,7 +456,8 @@ impl Board {
             next_color_to_move = Sides::WHITE;
         }
         self.set_color_to_move(next_color_to_move);
-        if mov.flag != 2 { // if en passant didnt just get triggered, reset it
+        if mov.flag != 2 {
+            // if en passant didnt just get triggered, reset it
             self.set_en_passant(15);
         }
 
