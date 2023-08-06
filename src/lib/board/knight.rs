@@ -24,10 +24,8 @@ pub fn get_all_moves(board: &mut Board, pos: Position) {
         attack_mask &= board.king_attacker_block_mask | board.king_attacker_mask;
     }
 
-    for target_square in 0..64 {
-        if attack_mask & BitBoard(1 << target_square) != BitBoard(0) {
-            board.move_list.push(Move::new(pos, target_square));
-        }
+    for i in attack_mask {
+        board.move_list.push(Move::new(pos, i));
     }
 }
 
