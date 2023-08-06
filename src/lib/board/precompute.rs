@@ -1,14 +1,13 @@
 use super::BitBoard;
 use crate::board::helper::Color;
-use std::sync::LazyLock;
 
 pub const DIRECTION_OFFSETS: [i8; 8] = [8, -8, -1, 1, 7, -7, 9, -9];
 pub static NUM_SQUARES_TO_EDGE: [[i8; 8]; 64] = num_squares_to_edge();
 pub static KNIGHT_ATTACKS: [BitBoard; 64] = knight_attacks();
 pub static KING_PAWN_ATTACKS: [[BitBoard; 64]; 2] = king_pawn_attacks();
 pub static KING_CASTLE_CHECKS: [[BitBoard; 2]; 2] = king_castle_checks();
-pub static ZOBRIST_HASH_TABLE: LazyLock<[[u64; 12]; 64]> = LazyLock::new(zobrist_hash_table);
-pub static ZOBRIST_SPECIAL_KEYS: LazyLock<[u64; 5]> = LazyLock::new(zobrist_special_keys);
+pub static ZOBRIST_HASH_TABLE: [[u64; 12]; 64] = zobrist_hash_table();
+pub static ZOBRIST_SPECIAL_KEYS: [u64; 5] = zobrist_special_keys();
 
 /// stupid for-range implemention because const_trait_impl and iter are not usuable yet.
 macro_rules! const_for {
