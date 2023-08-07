@@ -86,6 +86,9 @@ pub fn get_all_attacks(_board: &Board, pos: Position) -> BitBoard {
     let mut ret = BitBoard(0);
 
     for dir_idx in 0..8 {
+        if NUM_SQUARES_TO_EDGE[pos.0 as usize][dir_idx] == 0 {
+            continue;
+        }
         let dir = DIRECTION_OFFSETS[dir_idx as usize] as i8;
 
         if (pos.0 as i8 + dir) >= 64 || (pos.0 as i8 + dir) < 0 {
@@ -163,8 +166,15 @@ pub fn calc_pinned_pieces(board: &mut Board, pos: Position) {
 
         let mut found_pinned_piece_idx = 65; // 65 => not found yet
         let mut found_pinned_piece_idx_en_passant = 65;
+        let mut last_piece_was_friendly_en_passant = false;
         let mut temp_pinned_move_mask = BitBoard(0);
         for n in 0..NUM_SQUARES_TO_EDGE[pos.0 as usize][dir_idx] {
+            if last_piece_was_friendly_en_passant { // continue, bc this piece has to be a pawn,
+                                                    // which is en-passantable
+                last_piece_was_friendly_en_passant = false;
+                continue;
+            }
+
             let target_square = Position((pos.0 as i8 + dir * (n + 1)) as u8);
             let target_piece_is_pawn =
                 board.piece_is_type(target_square, Color::White, Piece::Pawn)
@@ -190,6 +200,7 @@ pub fn calc_pinned_pieces(board: &mut Board, pos: Position) {
 
                     if next_piece_in_line_is_friendly_pawn {
                         found_pinned_piece_idx_en_passant = (target_square.0 as i8 + dir) as u8;
+                        last_piece_was_friendly_en_passant = true;
                         continue;
                     }
                 }
@@ -198,6 +209,7 @@ pub fn calc_pinned_pieces(board: &mut Board, pos: Position) {
                     && en_passant == ((target_square.0 as i8 + dir) % 8) as u16
                 {
                     found_pinned_piece_idx_en_passant = target_square.0;
+                    last_piece_was_friendly_en_passant = true;
                     continue;
                 }
             }
@@ -206,7 +218,7 @@ pub fn calc_pinned_pieces(board: &mut Board, pos: Position) {
             // target square is not empty and there is a friendly piece => if it is the first
             // friendly piece remember it, if it is the second: skip this direction
             if !target_piece_is_empty && target_piece_is_friendly {
-                if found_pinned_piece_idx != 65 {
+                if found_pinned_piece_idx != 65 || found_pinned_piece_idx_en_passant != 65 {
                     break;
                 } else {
                     found_pinned_piece_idx = target_square.0;

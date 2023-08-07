@@ -43,6 +43,13 @@ fn perft_kiwipete_5() {
     assert_eq!(nodes, 193_690_690);
 }
 
+#[test]
+fn perft_pos3_6() {
+    let b = Board::new("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1");
+    let nodes = perft(6, b, 8);
+    assert_eq!(nodes, 11_030_083);
+}
+
 
 const NUMBER_TO_CHAR: [char; 8] = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 

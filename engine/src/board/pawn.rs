@@ -88,6 +88,15 @@ pub fn get_all_moves(board: &mut Board, pos: Position) {
                         board.move_list.push(Move::new_with_flags(pos, p, 1));
                     }
                 }
+            } else if board.king_attacker_count == 1 && board.king_attacker_mask.has(Position((pos.0 as i8 + dir) as u8)) && p.file() as u16 == en_passant {
+                // if a pawn moved two squares forwards and is checking the king, it can be taken
+                // en passant
+                if match active {
+                    Color::White => p.rank() == 5,
+                    Color::Black => p.rank() == 2,
+                } {
+                    board.move_list.push(Move::new_with_flags(pos, p, 1));
+                }
             }
         }
     }
