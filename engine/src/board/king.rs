@@ -37,7 +37,11 @@ pub fn get_all_moves(board: &mut Board, pos: Position) {
             .push(Move::new(pos, Position(target_square)));
     }
 
+    if board.king_attacker_count != 0 {
+        return
+    }
     let total_castle_mask = board.white_total | board.black_total | board.check_mask;
+    let pieces_castle_mask = board.white_total | board.black_total;
     match friendly_side {
         Color::White => {
             if board.castle_white_short()
@@ -49,7 +53,8 @@ pub fn get_all_moves(board: &mut Board, pos: Position) {
             }
 
             if board.castle_white_long()
-                && total_castle_mask & KING_CASTLE_CHECKS[Color::White as usize][1] == BitBoard(0)
+                && board.check_mask & KING_CASTLE_CHECKS[Color::White as usize][1] == BitBoard(0)
+                && pieces_castle_mask & KING_CASTLE_CHECKS[Color::White as usize][2] == BitBoard(0)
             {
                 board
                     .move_list
@@ -66,7 +71,8 @@ pub fn get_all_moves(board: &mut Board, pos: Position) {
             }
 
             if board.castle_black_long()
-                && total_castle_mask & KING_CASTLE_CHECKS[Color::Black as usize][1] == BitBoard(0)
+                && board.check_mask & KING_CASTLE_CHECKS[Color::Black as usize][1] == BitBoard(0)
+                && pieces_castle_mask & KING_CASTLE_CHECKS[Color::Black as usize][2] == BitBoard(0)
             {
                 board
                     .move_list
@@ -149,7 +155,7 @@ pub fn calc_pinned_pieces(board: &mut Board, pos: Position) {
     let en_passant = board.get_en_passant();
 
     board.pinned_pieces = BitBoard(0);
-    board.pinned_pieces_move_mask = BitBoard(0);
+    board.pinned_pieces_move_masks = [BitBoard(0); 64];
     board.en_passant_pinned_piece = 65;
 
     for dir_idx in 0..8 {
@@ -220,7 +226,7 @@ pub fn calc_pinned_pieces(board: &mut Board, pos: Position) {
                         board.pinned_pieces += Position(found_pinned_piece_idx);
                         // if pinning piece is found, add the pinning piece to the move mask
                         temp_pinned_move_mask += target_square;
-                        board.pinned_pieces_move_mask |= temp_pinned_move_mask;
+                        board.pinned_pieces_move_masks[found_pinned_piece_idx as usize] = temp_pinned_move_mask;
                     }
                 }
                 break;

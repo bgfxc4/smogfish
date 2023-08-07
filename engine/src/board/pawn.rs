@@ -26,7 +26,7 @@ pub fn get_all_moves(board: &mut Board, pos: Position) {
     // move one forward
     let p = Position((pos.0 as i8 + 8 * modi) as u8);
     if (board.king_attacker_count != 1 || attacker_and_block_mask.has(p))
-        && (!is_pinned || board.pinned_pieces_move_mask.has(p))
+        && (!is_pinned || board.pinned_pieces_move_masks[pos.0 as usize].has(p))
     {
         if board.tile_is_empty(p) {
             let is_promotion = match active {
@@ -49,7 +49,7 @@ pub fn get_all_moves(board: &mut Board, pos: Position) {
     let is_in_start_pos = (modi == 1 && pos.rank() == 1) || (modi == -1 && pos.rank() == 6);
     if is_in_start_pos
         && (board.king_attacker_count != 1 || attacker_and_block_mask.has(p))
-        && (!is_pinned || board.pinned_pieces_move_mask.has(p))
+        && (!is_pinned || board.pinned_pieces_move_masks[pos.0 as usize].has(p))
     {
         if board.tile_is_empty(p) && board.tile_is_empty(Position((pos.0 as i8 + 8 * modi) as u8)) {
             board.move_list.push(Move::new_with_flags(pos, p, 2));
@@ -62,7 +62,7 @@ pub fn get_all_moves(board: &mut Board, pos: Position) {
             let p = Position((pos.0 as i8 + 8 * modi + dir) as u8);
             if (board.king_attacker_count != 1
                 || attacker_and_block_mask.has(p))
-                    && (!is_pinned || board.pinned_pieces_move_mask.has(p))
+                    && (!is_pinned || board.pinned_pieces_move_masks[pos.0 as usize].has(p))
             {
                 if board.piece_color_on_tile(p, enemy_side) && !board.tile_is_empty(p) {
                     let is_promotion = match active {

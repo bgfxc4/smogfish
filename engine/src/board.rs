@@ -13,7 +13,7 @@ use self::{
 use bitboard::BitBoard;
 use helper::Piece;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Move {
     pub from: Position,
     pub to: Position,
@@ -52,7 +52,7 @@ pub struct Board {
     king_attacker_mask: BitBoard,
     king_attacker_block_mask: BitBoard,
     pinned_pieces: BitBoard,
-    pinned_pieces_move_mask: BitBoard,
+    pinned_pieces_move_masks: [BitBoard; 64],
     /// stores, if a pawn can not take en passant. This can only be one
     /// pawn at once and the tile index of it is stored here.
     /// 65 -> empty
@@ -84,7 +84,7 @@ impl Board {
             king_attacker_mask: BitBoard(0),
             king_attacker_block_mask: BitBoard(0),
             pinned_pieces: BitBoard(0),
-            pinned_pieces_move_mask: BitBoard(0),
+            pinned_pieces_move_masks: [BitBoard(0); 64],
             en_passant_pinned_piece: 65,
             flags: 0,
             half_moves: 0,
@@ -340,6 +340,20 @@ impl Board {
 
         self.clear_bit(mov.from, p.0, side_to_play);
         if move_is_capture {
+            if side_to_play == Color::White {
+                if mov.to == Position(0+7*8) {
+                    self.remove_castling_right(oponent_side, true);
+                } else if mov.to == Position(7+7*8) {
+                    self.remove_castling_right(oponent_side, false);
+                }
+            } else {
+                if mov.to == Position(0+0*8) {
+                    self.remove_castling_right(oponent_side, true);
+                } else if mov.to == Position(7+0*8) {
+                    self.remove_castling_right(oponent_side, false);
+                }
+            }
+
             self.clear_bit(mov.to, target_piece.0, target_piece.1);
         }
 

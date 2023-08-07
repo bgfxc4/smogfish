@@ -5,7 +5,8 @@ pub const DIRECTION_OFFSETS: [i8; 8] = [8, -8, -1, 1, 7, -7, 9, -9];
 pub static NUM_SQUARES_TO_EDGE: [[i8; 8]; 64] = num_squares_to_edge();
 pub static KNIGHT_ATTACKS: [BitBoard; 64] = knight_attacks();
 pub static KING_PAWN_ATTACKS: [[BitBoard; 64]; 2] = king_pawn_attacks();
-pub static KING_CASTLE_CHECKS: [[BitBoard; 2]; 2] = king_castle_checks();
+/// 0: for short castle checks and pieces, 1: for long castle checks, 2: for long caslte_pieces
+pub static KING_CASTLE_CHECKS: [[BitBoard; 3]; 2] = king_castle_checks();
 pub static ZOBRIST_HASH_TABLE: [[u64; 12]; 64] = zobrist_hash_table();
 pub static ZOBRIST_SPECIAL_KEYS: [u64; 5] = zobrist_special_keys();
 
@@ -103,10 +104,10 @@ const fn king_pawn_attacks() -> [[BitBoard; 64]; 2] {
     ret
 }
 
-const fn king_castle_checks() -> [[BitBoard; 2]; 2] {
+const fn king_castle_checks() -> [[BitBoard; 3]; 2] {
     [
-        [BitBoard(96), BitBoard(12)],
-        [BitBoard(6917529027641081856), BitBoard(864691128455135232)],
+        [BitBoard(96), BitBoard(12), BitBoard(14)],
+        [BitBoard(6917529027641081856), BitBoard(864691128455135232), BitBoard(1008806316530991104)],
     ]
 }
 

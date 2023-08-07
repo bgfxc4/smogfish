@@ -59,7 +59,7 @@ pub fn get_all_moves_sliding(
                 }
             }
 
-            if is_pinned && !board.pinned_pieces_move_mask.has(target_square) {
+            if is_pinned && !board.pinned_pieces_move_masks[pos.0 as usize].has(target_square) {
                 break;
             }
 
