@@ -22,4 +22,4 @@ jobs:
       - name: Build
         run: cargo build --verbose
       - name: Run Tests
-        run: cargo test perft --test '*' --release
+        run: cargo test perft --test 'perft' --release
