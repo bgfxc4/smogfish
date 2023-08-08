@@ -1,14 +1,15 @@
 use super::BitBoard;
-use crate::board::helper::Color;
+use crate::board::helper::{Color, Position};
 
 pub const DIRECTION_OFFSETS: [i8; 8] = [8, -8, -1, 1, 7, -7, 9, -9];
-pub static NUM_SQUARES_TO_EDGE: [[i8; 8]; 64] = num_squares_to_edge();
-pub static KNIGHT_ATTACKS: [BitBoard; 64] = knight_attacks();
-pub static KING_PAWN_ATTACKS: [[BitBoard; 64]; 2] = king_pawn_attacks();
+pub const NUM_SQUARES_TO_EDGE: [[i8; 8]; 64] = num_squares_to_edge();
+pub const KNIGHT_ATTACKS: [BitBoard; 64] = knight_attacks();
+pub const KING_ATTACKS: [BitBoard; 64] = king_attacks();
+pub const KING_PAWN_ATTACKS: [[BitBoard; 64]; 2] = king_pawn_attacks();
 /// 0: for short castle checks and pieces, 1: for long castle checks, 2: for long caslte_pieces
-pub static KING_CASTLE_CHECKS: [[BitBoard; 3]; 2] = king_castle_checks();
-pub static ZOBRIST_HASH_TABLE: [[u64; 12]; 64] = zobrist_hash_table();
-pub static ZOBRIST_SPECIAL_KEYS: [u64; 5] = zobrist_special_keys();
+pub const KING_CASTLE_CHECKS: [[BitBoard; 3]; 2] = king_castle_checks();
+pub const ZOBRIST_HASH_TABLE: [[u64; 12]; 64] = zobrist_hash_table();
+pub const ZOBRIST_SPECIAL_KEYS: [u64; 5] = zobrist_special_keys();
 
 /// stupid for-range implemention because const_trait_impl and iter are not usuable yet.
 macro_rules! const_for {
@@ -77,6 +78,22 @@ const fn knight_attacks() -> [BitBoard; 64] {
                     }
                 }
             })
+        })
+    });
+    ret
+}
+
+const fn king_attacks() -> [BitBoard; 64] {
+    let mut ret = [BitBoard(0); 64];
+    const_for!(for idx in 0..64 {
+        const_for!(for dir_idx in 0..8 {
+            if NUM_SQUARES_TO_EDGE[idx][dir_idx] != 0 {
+
+                let dir = DIRECTION_OFFSETS[dir_idx as usize] as i8;
+                let p = Position((idx as i8 + dir) as u8);
+
+                ret[idx].0 |= 1 << (p.0);
+            }
         })
     });
     ret

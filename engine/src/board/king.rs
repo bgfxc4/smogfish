@@ -1,40 +1,23 @@
 use super::bitboard::BitBoard;
 use super::helper::{Color, Piece};
 use super::precompute::{
-    DIRECTION_OFFSETS, KING_CASTLE_CHECKS, KING_PAWN_ATTACKS, KNIGHT_ATTACKS, NUM_SQUARES_TO_EDGE,
+    DIRECTION_OFFSETS, KING_CASTLE_CHECKS, KING_PAWN_ATTACKS, KNIGHT_ATTACKS, NUM_SQUARES_TO_EDGE, KING_ATTACKS,
 };
 use super::{Board, Move, Position};
 
 pub fn get_all_moves(board: &mut Board, pos: Position) {
     let friendly_side = board.current_player();
 
-    for dir_idx in 0..8 {
-        if NUM_SQUARES_TO_EDGE[pos.0 as usize][dir_idx] == 0 {
-            continue;
-        }
-        let dir = DIRECTION_OFFSETS[dir_idx as usize] as i8;
-
-        if (pos.0 as i8 + dir) >= 64 || (pos.0 as i8 + dir) < 0 {
-            continue;
-        }
-
-        let target_square = (pos.0 as i8 + dir) as u8;
-
-        // target square is not empty and there is a friendly piece => stop search in this direction
-        if !board.tile_is_empty(Position(target_square))
-            && board.piece_color_on_tile(Position(target_square), friendly_side)
-        {
-            continue;
-        }
-
-        // the target square is in check
-        if board.check_mask & BitBoard(1 << target_square) != BitBoard(0) {
-            continue;
-        }
-
+    let mut move_mask = KING_ATTACKS[pos.0 as usize];
+    if friendly_side == Color::White {
+        move_mask &= (!board.white_total | board.black_total) & !board.check_mask;
+    } else {
+        move_mask &= (board.white_total | !board.black_total) & !board.check_mask;
+    }
+    for p in move_mask {
         board
             .move_list
-            .push(Move::new(pos, Position(target_square)));
+            .push(Move::new(pos, p));
     }
 
     if board.king_attacker_count != 0 {
@@ -82,23 +65,9 @@ pub fn get_all_moves(board: &mut Board, pos: Position) {
     }
 }
 
+#[inline]
 pub fn get_all_attacks(_board: &Board, pos: Position) -> BitBoard {
-    let mut ret = BitBoard(0);
-
-    for dir_idx in 0..8 {
-        if NUM_SQUARES_TO_EDGE[pos.0 as usize][dir_idx] == 0 {
-            continue;
-        }
-        let dir = DIRECTION_OFFSETS[dir_idx as usize] as i8;
-
-        if (pos.0 as i8 + dir) >= 64 || (pos.0 as i8 + dir) < 0 {
-            continue;
-        }
-
-        let target_square = pos.0 as i8 + dir;
-        ret |= BitBoard(1 << target_square);
-    }
-    ret
+    KING_ATTACKS[pos.0 as usize]
 }
 
 // the enemy king can be ignored here, he can not be an attacker of the own king
