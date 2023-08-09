@@ -293,24 +293,17 @@ impl Board {
             .next()
             .unwrap();
         self.check_mask = BitBoard(0);
-        for i in self.pieces[(color, Piece::Pawn)].into_iter() {
-            self.check_mask |= pawn::get_all_attacks(self, i);
-        }
         for i in self.pieces[(color, Piece::Knight)].into_iter() {
             self.check_mask |= knight::get_all_attacks(self, i);
-        }
-        for i in self.pieces[(color, Piece::Bishop)].into_iter() {
-            self.check_mask |= sliding_pieces::get_all_attacks_bishop(self, i, color);
-        }
-        for i in self.pieces[(color, Piece::Rook)].into_iter() {
-            self.check_mask |= sliding_pieces::get_all_attacks_rook(self, i, color);
-        }
-        for i in self.pieces[(color, Piece::Queen)].into_iter() {
-            self.check_mask |= sliding_pieces::get_all_attacks_queen(self, i, color);
         }
         for i in self.pieces[(color, Piece::King)].into_iter() {
             self.check_mask |= king::get_all_attacks(self, i);
         }
+
+        self.check_mask |= pawn::get_all_attacks(self, self.pieces[(color, Piece::Pawn)]);
+        self.check_mask |= sliding_pieces::get_all_attacks_rook(self, self.pieces[(color, Piece::Rook)] | self.pieces[(color, Piece::Queen)], color);
+        self.check_mask |= sliding_pieces::get_all_attacks_bishop(self, self.pieces[(color, Piece::Bishop)] | self.pieces[(color, Piece::Queen)], color);
+
         if self.check_mask.has(king_pos) {
             king::calc_king_attacker_masks(self, king_pos);
             self.king_attacker_count = self.king_attacker_mask.count_set_bits();

@@ -102,22 +102,16 @@ pub fn get_all_moves(board: &mut Board, pos: Position) {
     }
 }
 
-pub fn get_all_attacks(board: &Board, pos: Position) -> BitBoard {
-    let mut ret = BitBoard(0);
-    let modi: i8 = match board.current_player() {
-        Color::White => -1,
-        Color::Black => 1,
-    };
+pub fn get_all_attacks(board: &Board, pieces: BitBoard) -> BitBoard {
 
-    // take right
-    if pos.file() != 7 {
-        // check for piece on target square not necessary here
-        ret += Position((pos.0 as i8 + 8 * modi + 1) as u8);
+    if board.current_player() == Color::White {
+        // get attacks of black pawns
+        let not_a_mask = 0xfefefefefefefefe;
+        let not_h_mask = 0x7f7f7f7f7f7f7f7f;
+        ((pieces >> 7) & not_a_mask) | ((pieces >> 9) & not_h_mask)
+    } else {
+        let not_a_mask = 0xfefefefefefefefe;
+        let not_h_mask = 0x7f7f7f7f7f7f7f7f;
+        ((pieces << 9) & not_a_mask) | ((pieces << 7) & not_h_mask)
     }
-
-    // take left
-    if pos.file() != 0 {
-        ret += Position((pos.0 as i8 + 8 * modi - 1) as u8);
-    }
-    ret
 }

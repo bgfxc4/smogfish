@@ -7,24 +7,28 @@ pub fn get_all_moves_bishop(board: &mut Board, pos: Position) {
     get_all_moves_sliding(board, pos, 4, 8);
 }
 
-pub fn get_all_attacks_bishop(board: &Board, pos: Position, color: Color) -> BitBoard {
-    get_all_attacks_sliding(board, pos, color, 4, 8)
+pub fn get_all_attacks_bishop(board: &Board, pieces: BitBoard, color: Color) -> BitBoard {
+    let empty = (!board.white_total & !board.black_total) | board.pieces[(!color, Piece::King)];
+    nowe_dumb_7_fill(pieces, empty) |
+    soea_dumb_7_fill(pieces, empty) |
+    noea_dumb_7_fill(pieces, empty) |
+    sowe_dumb_7_fill(pieces, empty)
 }
 
 pub fn get_all_moves_rook(board: &mut Board, pos: Position) {
     get_all_moves_sliding(board, pos, 0, 4);
 }
 
-pub fn get_all_attacks_rook(board: &Board, pos: Position, color: Color) -> BitBoard {
-    get_all_attacks_sliding(board, pos, color, 0, 4)
+pub fn get_all_attacks_rook(board: &Board, pieces: BitBoard, color: Color) -> BitBoard {
+    let empty = (!board.white_total & !board.black_total) | board.pieces[(!color, Piece::King)];
+    nort_dumb_7_fill(pieces, empty) |
+    sout_dumb_7_fill(pieces, empty) |
+    west_dumb_7_fill(pieces, empty) |
+    east_dumb_7_fill(pieces, empty)
 }
 
 pub fn get_all_moves_queen(board: &mut Board, pos: Position) {
     get_all_moves_sliding(board, pos, 0, 8);
-}
-
-pub fn get_all_attacks_queen(board: &Board, pos: Position, color: Color) -> BitBoard {
-    get_all_attacks_sliding(board, pos, color, 0, 8)
 }
 
 pub fn get_all_moves_sliding(
@@ -80,29 +84,76 @@ pub fn get_all_moves_sliding(
     }
 }
 
-pub fn get_all_attacks_sliding(
-    board: &Board,
-    pos: Position,
-    color: Color,
-    start_dir: usize,
-    end_dir: usize,
-) -> BitBoard {
-    let mut ret = BitBoard(0);
+#[inline]
+fn sout_dumb_7_fill(rook: BitBoard, empty: BitBoard) -> BitBoard {
+    dumb_7_fill::<-8, 0>(rook, empty)
+}
 
-    for dir_idx in start_dir..end_dir {
-        let dir = DIRECTION_OFFSETS[dir_idx as usize] as i8;
-        for n in 0..NUM_SQUARES_TO_EDGE[pos.0 as usize][dir_idx] {
-            let target_square = Position((pos.0 as i8 + dir * (n + 1)) as u8);
-            ret += target_square;
+#[inline]
+fn nort_dumb_7_fill(rook: BitBoard, empty: BitBoard) -> BitBoard {
+    dumb_7_fill::<8, 0>(rook, empty)
+}
 
-            // stop search if there is a piece blocking the line, but continue if it is the enemy
-            // king, because he should not be included in this search
-            if !board.tile_is_empty(target_square)
-                && !board.piece_is_type(target_square, !color, Piece::King)
-            {
-                break;
-            }
+#[inline]
+fn east_dumb_7_fill(rook: BitBoard, empty: BitBoard) -> BitBoard {
+    dumb_7_fill::<1, 0xfefefefefefefefe>(rook, empty)
+}
+
+#[inline]
+fn noea_dumb_7_fill(bishop: BitBoard, empty: BitBoard) -> BitBoard {
+    dumb_7_fill::<9, 0xfefefefefefefefe>(bishop, empty)
+}
+
+#[inline]
+fn soea_dumb_7_fill(bishop: BitBoard, empty: BitBoard) -> BitBoard {
+    dumb_7_fill::<-7, 0xfefefefefefefefe>(bishop, empty)
+}
+
+#[inline]
+fn west_dumb_7_fill(rook: BitBoard, empty: BitBoard) -> BitBoard {
+    dumb_7_fill::<-1, 0x7f7f7f7f7f7f7f7f>(rook, empty)
+}
+
+#[inline]
+fn sowe_dumb_7_fill(bishop: BitBoard, empty: BitBoard) -> BitBoard {
+    dumb_7_fill::<-9, 0x7f7f7f7f7f7f7f7f>(bishop, empty)
+}
+
+#[inline]
+fn nowe_dumb_7_fill(bishop: BitBoard, empty: BitBoard) -> BitBoard {
+    dumb_7_fill::<7, 0x7f7f7f7f7f7f7f7f>(bishop, empty)
+}
+
+fn dumb_7_fill<const DIR: i8, const WRAP_MASK: u64>(mut pieces: BitBoard, mut empty: BitBoard) -> BitBoard {
+    let mut flood = pieces;
+    if WRAP_MASK != 0 {
+        empty &= WRAP_MASK;
+    }
+    if DIR > 0 {
+        let d = DIR as u8;
+        pieces = (pieces << d) & empty; flood |= pieces;
+        pieces = (pieces << d) & empty; flood |= pieces;
+        pieces = (pieces << d) & empty; flood |= pieces;
+        pieces = (pieces << d) & empty; flood |= pieces;
+        pieces = (pieces << d) & empty; flood |= pieces;
+        flood |= (pieces << d) & empty;
+        if WRAP_MASK == 0 {
+            flood << d
+        } else {
+            (flood << d) & WRAP_MASK
+        }
+    } else {
+        let d = (DIR * -1) as u8;
+        pieces = (pieces >> d) & empty; flood |= pieces;
+        pieces = (pieces >> d) & empty; flood |= pieces;
+        pieces = (pieces >> d) & empty; flood |= pieces;
+        pieces = (pieces >> d) & empty; flood |= pieces;
+        pieces = (pieces >> d) & empty; flood |= pieces;
+        flood |= (pieces >> d) & empty;
+        if WRAP_MASK == 0 {
+            flood >> d
+        } else {
+            (flood >> d) & WRAP_MASK
         }
     }
-    ret
 }

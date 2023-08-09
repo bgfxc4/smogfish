@@ -1,5 +1,5 @@
 use super::helper::Position;
-use std::ops::{AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, Mul, Not, SubAssign};
+use std::ops::{AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, Mul, Not, SubAssign, Shr, Shl};
 
 #[derive(PartialEq, Eq, PartialOrd, Clone, Copy, Debug, Default, Hash)]
 pub struct BitBoard(pub u64);
@@ -31,6 +31,14 @@ impl BitAnd for BitBoard {
     }
 }
 
+impl BitAnd<u64> for BitBoard {
+    type Output = BitBoard;
+    #[inline]
+    fn bitand(self, other: u64) -> BitBoard {
+        BitBoard(self.0 & other)
+    }
+}
+
 impl BitOr for BitBoard {
     type Output = BitBoard;
     #[inline]
@@ -54,6 +62,13 @@ impl BitAndAssign for BitBoard {
     }
 }
 
+impl BitAndAssign<u64> for BitBoard {
+    #[inline]
+    fn bitand_assign(&mut self, rhs: u64) {
+        self.0 = self.0 & rhs;
+    }
+}
+
 impl BitOrAssign for BitBoard {
     #[inline]
     fn bitor_assign(&mut self, rhs: Self) {
@@ -66,6 +81,22 @@ impl Not for BitBoard {
     #[inline]
     fn not(self) -> Self {
         BitBoard(!self.0)
+    }
+}
+
+impl Shl<u8> for BitBoard {
+    type Output = BitBoard;
+    #[inline]
+    fn shl(self, rhs: u8) -> Self::Output {
+        BitBoard(self.0 << rhs)
+    }
+}
+
+impl Shr<u8> for BitBoard {
+    type Output = BitBoard;
+    #[inline]
+    fn shr(self, rhs: u8) -> Self::Output {
+        BitBoard(self.0 >> rhs)
     }
 }
 
